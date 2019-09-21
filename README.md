@@ -1,5 +1,5 @@
 # Vulkan-Tutorial-with-CPP
-Dependencies
-GLFW3
-Vulkan SDK
-shaderc
+## Dependencies ##
+1. GLFW3
+2. Vulkan SDK
+3. shaderc
