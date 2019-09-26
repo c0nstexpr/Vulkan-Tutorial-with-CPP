@@ -32,40 +32,39 @@ void vulkan_triangle_sample::generate_debug_messenger_create_info()
 
 void vulkan_triangle_sample::generate_instance_create_info()
 {
-	instance::info_type instance_create_info;
-	instance_create_info.application_info = info_proxy<ApplicationInfo>{"Hello Triangle", "No Engine"};
+	auto& info = instance_.info;
+	info.application_info = info_proxy<ApplicationInfo>{"Hello Triangle", "No Engine"};
 	{
 		uint32_t count;
 		const auto extensions = glfwGetRequiredInstanceExtensions(&count);
-		instance_create_info.extension_names.resize(count);
+		info.extension_names.resize(count);
 		std::generate(
-			instance_create_info.extension_names.begin(),
-			instance_create_info.extension_names.end(),
+			info.extension_names.begin(),
+			info.extension_names.end(),
 			[&, i = 0]()mutable {return extensions[i++]; }
 		);
 	}
 	if constexpr(is_debug)
 	{
-		instance_create_info.layer_names = {"VK_LAYER_KHRONOS_validation"};
+		info.layer_names = {"VK_LAYER_KHRONOS_validation"};
 		if(!is_included(
-			instance_create_info.layer_names,
+			info.layer_names,
 			enumerateInstanceLayerProperties(),
 			[](const auto& layer, const auto& p)->bool { return layer == p.layerName; }
 		))
 			throw std::runtime_error("validation layers requested, but not available!");
 
 		generate_debug_messenger_create_info();
-		instance_create_info.info.pNext = &debug_messenger_.info;
-		instance_create_info.extension_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		info.info.pNext = &debug_messenger_.info;
+		info.extension_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 	if(!is_included(
-		instance_create_info.extension_names,
+		info.extension_names,
 		enumerateInstanceExtensionProperties(),
 		[](const auto& layer, const auto& p)->bool { return layer == p.extensionName; }))
 		throw std::runtime_error("requested instance extension is not available!");
 
-	instance_create_info.set_proxy();
-	instance_ = instance{instance_create_info};
+	info.set_proxy();
 }
 
 bool vulkan_triangle_sample::generate_physical_device(const PhysicalDevice& d)
@@ -98,20 +97,18 @@ void vulkan_triangle_sample::generate_device_create_info()
 {
 	using value_type = decltype(std::declval<info_t<Device>>().queue_create_infos)::value_type;
 
-	device_ = device{
-		device::info_type{
+	device_.info = decltype(device_.info){
+		{
 			{
-				{
-					graphics_queue_index_,
+				graphics_queue_index_,
 					info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
-				},
-				{
-					present_queue_index_,
-					info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
-				}
 			},
-		vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME}
-	}
+			{
+				present_queue_index_,
+				info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
+			}
+		},
+			vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME}
 	};
 	if(!is_included(
 		device_.info.extension_names,
@@ -123,17 +120,17 @@ void vulkan_triangle_sample::generate_device_create_info()
 
 void vulkan_triangle_sample::generate_swap_chain_create_info()
 {
-	const auto&& formats = physical_device_.getSurfaceFormatsKHR(*surface_);
+	const auto& formats = physical_device_.getSurfaceFormatsKHR(*surface_);
 	const SurfaceFormatKHR required_format{Format::eB8G8R8A8Unorm, ColorSpaceKHR::eSrgbNonlinear};
 	const auto available_format = std::find(formats.cbegin(), formats.cend(),
 		required_format) == formats.end() ? formats.front() : required_format;
 
-	const auto&& present_modes = physical_device_.getSurfacePresentModesKHR(*surface_);
+	const auto& present_modes = physical_device_.getSurfacePresentModesKHR(*surface_);
 	const auto required_present_mode = PresentModeKHR::eMailbox;
 	const auto present_mode = std::find(present_modes.cbegin(), present_modes.cend(),
 		required_present_mode) == present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
 
-	const auto&& capabilities = physical_device_.getSurfaceCapabilitiesKHR(*surface_);
+	const auto& capabilities = physical_device_.getSurfaceCapabilitiesKHR(*surface_);
 
 	const auto extent = capabilities.currentExtent.width == -1 ?
 		Extent2D{width, height} :
@@ -141,7 +138,8 @@ void vulkan_triangle_sample::generate_swap_chain_create_info()
 		std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
 		std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
 	};
-	auto info = swap_chain::info_type{
+	auto& info = swap_chain_.info;
+	info = info_t<SwapchainKHR>{
 		{},
 		{
 			{},
@@ -169,8 +167,6 @@ void vulkan_triangle_sample::generate_swap_chain_create_info()
 		info.set_proxy();
 	}
 	else info.info.imageSharingMode = SharingMode::eExclusive;
-
-	swap_chain_ = swap_chain{std::move(info)};
 }
 
 void vulkan_triangle_sample::generate_image_view_create_infos()
@@ -183,7 +179,6 @@ void vulkan_triangle_sample::generate_image_view_create_infos()
 		image_views_.end(),
 		[&images, this, i = size_t{0}]()mutable
 	{
-		;
 		return image_view{
 			{
 				{},
@@ -266,6 +261,7 @@ void vulkan_triangle_sample::generate_shader_module_create_infos()
 	CompileOptions options;
 	const auto vertex_shader_code_path = path("shaders") / path("shader.vert");
 	const auto fragment_shader_code_path = path("shaders") / path("shader.frag");
+
 	options.SetGenerateDebugInfo();
 	options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
@@ -273,15 +269,15 @@ void vulkan_triangle_sample::generate_shader_module_create_infos()
 	if(!cfin) throw std::runtime_error("failed to load vertex code file\n");
 	csout << cfin.rdbuf();
 	{
-		const auto&& vertex_code_compile_res = glsl_compile_to_spriv(
+		const auto& [spriv_code, error_str, status] = glsl_compile_to_spriv(
 			csout.str(),
 			shaderc_vertex_shader,
 			"vertex",
 			options
 		);
-		if(std::get<2>(vertex_code_compile_res) != shaderc_compilation_status_success)
-			throw std::runtime_error("vertex code compile failure\n" + std::get<1>(vertex_code_compile_res));
-		vertex_shader_module_ = shader_module{shader_module::info_type{std::move(std::get<0>(vertex_code_compile_res)), {}}};
+		if(status != shaderc_compilation_status_success)
+			throw std::runtime_error("vertex code compile failure\n" + error_str);
+		vertex_shader_module_.info = info_t<ShaderModule>{std::move(spriv_code), {}};
 	}
 
 	cfin.close();
@@ -290,15 +286,15 @@ void vulkan_triangle_sample::generate_shader_module_create_infos()
 	csout.str("");
 	csout << cfin.rdbuf();
 	{
-		const auto&& fragment_compile_res = glsl_compile_to_spriv(
+		const auto& [spriv_code, error_str, status] = glsl_compile_to_spriv(
 			csout.str(),
 			shaderc_fragment_shader,
 			"fragment",
 			options
 		);
-		if(std::get<2>(fragment_compile_res) != shaderc_compilation_status_success)
-			throw std::runtime_error("fragment code compile failure\n" + std::get<1>(fragment_compile_res));
-		fragment_shader_module_ = shader_module{shader_module::info_type{std::move(std::get<0>(fragment_compile_res)), {}}};
+		if(status != shaderc_compilation_status_success)
+			throw std::runtime_error("fragment code compile failure\n" + error_str);
+		fragment_shader_module_.info = info_t<ShaderModule>{std::move(spriv_code)};
 	}
 	cfin.close();
 }
@@ -319,8 +315,14 @@ void vulkan_triangle_sample::generate_graphics_pipeline_create_info()
 		nullopt,
 		PipelineShaderStageCreateInfo{{}, ShaderStageFlagBits::eFragment, *fragment_shader_module_}
 	};
-
 	PipelineInputAssemblyStateCreateInfo input_assembly_state = {{}, PrimitiveTopology::eTriangleList};
+	auto input_state = info_proxy<PipelineVertexInputStateCreateInfo>{
+		{vertex::description},
+		{
+			vertex::attribute_descriptions.cbegin(),
+			vertex::attribute_descriptions.cend()
+		}
+	};
 	auto viewport_state = info_proxy<PipelineViewportStateCreateInfo>{
 		{
 			{
@@ -334,7 +336,6 @@ void vulkan_triangle_sample::generate_graphics_pipeline_create_info()
 		},
 		vector<Rect2D>{Rect2D{{0, 0}, swap_chain_.info.info.imageExtent}}
 	};
-
 	PipelineRasterizationStateCreateInfo rasterization_state = {
 		{},
 		false,
@@ -371,35 +372,37 @@ void vulkan_triangle_sample::generate_graphics_pipeline_create_info()
 			std::array<float, 4>{0, 0, 0, 0}
 		}
 	};
-	GraphicsPipelineCreateInfo info;
 
-	info.renderPass = *render_pass_;
-	info.layout = *pipeline_layout_;
+	graphics_pipeline_.info = info_t<GraphicsPipeline>{
+		{std::move(vertex_shader_stage), std::move(fragment_shader_stage)},
+		std::move(input_state),
+		std::move(input_assembly_state),
+		nullopt,
+		std::move(viewport_state),
+		std::move(rasterization_state),
+		PipelineMultisampleStateCreateInfo{},
+		nullopt,
+		std::move(color_blend_state),
+	};
 
-	graphics_pipeline_ = graphics_pipeline{
-		graphics_pipeline::info_type{
-			{std::move(vertex_shader_stage), std::move(fragment_shader_stage)},
-			info_proxy<PipelineVertexInputStateCreateInfo>{},
-			std::move(input_assembly_state),
-			nullopt,
-			std::move(viewport_state),
-			std::move(rasterization_state),
-			PipelineMultisampleStateCreateInfo{},
-			nullopt,
-			std::move(color_blend_state),
-			nullopt,
-			std::move(info)
-	}
+	graphics_pipeline_.info.info.renderPass = *render_pass_;
+	graphics_pipeline_.info.info.layout = *pipeline_layout_;
+}
+
+void vulkan_triangle_sample::generate_vertex_buffer_allocate_info()
+{
+	vertices_buffer_.info = {
+		{},
+		vertex::description.stride * vertices_.size(),
+		SharingMode::eExclusive
 	};
 }
 
 void vulkan_triangle_sample::generate_graphics_command_pool_create_info()
 {
-	graphics_command_pool_ = command_pool{
-		{
-			{},
-			graphics_queue_index_
-		}
+	graphics_command_pool_.info = {
+		CommandPoolCreateFlagBits::eResetCommandBuffer | CommandPoolCreateFlagBits::eTransient,
+		graphics_queue_index_
 	};
 }
 
@@ -418,66 +421,57 @@ void vulkan_triangle_sample::generate_graphics_command_buffer_allocate_info()
 
 void vulkan_triangle_sample::generate_render_info()
 {
-	command_buffer_begin_info_ = info_proxy<CommandBufferBeginInfo>{
-		nullopt,
-		CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse}
-	};
+	command_buffer_begin_info_.info = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eOneTimeSubmit};
 
 	render_pass_begin_infos_.resize(frame_buffers_.size());
-	submit_infos_proxy_.resize(graphics_command_buffers_.size());
-	submit_infos_.resize(submit_infos_proxy_.size());
+	submit_infos_.resize(graphics_command_buffers_.size());
 	present_infos_.resize(submit_infos_.size());
 
 	std::for_each(
 		graphics_command_buffers_.begin(),
 		graphics_command_buffers_.end(),
-		[this, i = size_t{0}](auto& buffer)mutable
+		[this, index = size_t{0}](command_buffer& buffer)mutable
 	{
-		render_pass_begin_infos_[i] = info_proxy<RenderPassBeginInfo>{
+		render_pass_begin_infos_[index] = info_proxy<RenderPassBeginInfo>{
 			{{std::array<float, 4>{0, 0, 0, 0}}},
 			{
 				RenderPass{*render_pass_},
-				Framebuffer{*frame_buffers_[i]},
+				Framebuffer{*frame_buffers_[index]},
 				Rect2D{{0, 0}, {swap_chain_.info.info.imageExtent}}
 			}
 		};
-		try
-		{
-			buffer->begin(command_buffer_begin_info_.info);
-			buffer->beginRenderPass(render_pass_begin_infos_[i].info, SubpassContents::eInline);
-			buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_);
-			buffer->draw(3, 1, 0, 0);
-			buffer->endRenderPass();
-			buffer->end();
 
-			submit_infos_proxy_[i] = info_proxy<SubmitInfo>{
-				vector<Semaphore>{*swapchain_image_syn_},
-				PipelineStageFlagBits::eColorAttachmentOutput,
-				vector<CommandBuffer>{*buffer},
-				vector<Semaphore>{*render_syn_}
-			};
+		/*
+		buffer->begin(command_buffer_begin_info_.info, device_.dispatch());
+		buffer->beginRenderPass(render_pass_begin_infos_[index].info, SubpassContents::eInline, device_.dispatch());
+		buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
+		buffer->bindVertexBuffers(0, {*vertices_buffer_}, {0}, device_.dispatch());
+		buffer->draw(vertices_.size(), 1, 0, 0, device_.dispatch());
+		buffer->endRenderPass(device_.dispatch());
+		buffer->end(device_.dispatch());
+		*/
 
-			submit_infos_[i] = submit_infos_proxy_[i].info;
+		submit_infos_[index] = info_proxy<SubmitInfo>{
+			vector<Semaphore>{*swap_chain_image_syn_},
+			PipelineStageFlagBits::eColorAttachmentOutput,
+			vector<CommandBuffer>{*buffer},
+			vector<Semaphore>{*render_syn_}
+		};
 
-			present_infos_[i] = info_proxy<PresentInfoKHR>{
-				vector<Semaphore>{*render_syn_},
-				vector<SwapchainKHR>{*swap_chain_},
-				vector<uint32_t>{static_cast<uint32_t>(i)}
-			};
+		present_infos_[index] = info_proxy<PresentInfoKHR>{
+			vector<Semaphore>{*render_syn_},
+			vector<SwapchainKHR>{*swap_chain_},
+			vector<uint32_t>{static_cast<uint32_t>(index)}
+		};
 
-			i++;
-		}
-		catch(const std::exception& e) { std::cerr << e.what() << "\nfailed to record command buffer!"; return; }
+		index++;
 	}
 	);
 }
 
-template<typename T>
-PhysicalDevice vulkan_triangle_sample::ini_physical_device(const Instance& instance, const T& t)
+void vulkan_triangle_sample::generate_fence_create_info()
 {
-	for(const auto& device : instance.enumeratePhysicalDevices())
-		if(t(device)) return device;
-	throw std::runtime_error("failed to find a suitable physical device!");
+	gpu_syn_.info.flags = FenceCreateFlagBits::eSignaled;
 }
 
 VkBool32 vulkan_triangle_sample::debug_callback(
@@ -542,17 +536,27 @@ void vulkan_triangle_sample::initialize_vulkan()
 		graphics_pipeline_ = std::move(graphics_pipelines_.front());
 	}
 
+	generate_vertex_buffer_allocate_info();
+	initialize_vertex_buffer(device_, vertices_buffer_);
+	vertices_buffer_memory_ = allocate_buffer_memory<decltype(vertices_buffer_memory_)::info_type>(
+		device_, vertices_buffer_,
+		physical_device_,
+		MemoryPropertyFlagBits::eHostVisible
+		);
+
 	generate_graphics_command_pool_create_info();
 	initialize_command_pool(device_, graphics_command_pool_);
 
 	generate_graphics_command_buffer_allocate_info();
 	initialize_command_buffers(device_, graphics_command_buffers_);
 
-	initialize_semaphore(device_, swapchain_image_syn_);
+	initialize_semaphore(device_, swap_chain_image_syn_);
 
 	initialize_semaphore(device_, render_syn_);
 
+	generate_fence_create_info();
 	initialize_fence(device_, gpu_syn_);
+
 	generate_render_info();
 }
 
@@ -566,8 +570,8 @@ void vulkan_triangle_sample::re_initialize_vulkan()
 			glfwWaitEvents();
 		}
 	}
+
 	device_->waitIdle();
-	device_->resetFences({*gpu_syn_});
 
 	objects_reset(graphics_command_buffers_, device_);
 
@@ -582,6 +586,8 @@ void vulkan_triangle_sample::re_initialize_vulkan()
 
 	for(auto& view : image_views_)
 		view = nullptr;
+
+	swap_chain_ = nullptr;
 
 	generate_swap_chain_create_info();
 	initialize_swap_chain(device_, swap_chain_);
@@ -614,41 +620,6 @@ void vulkan_triangle_sample::re_initialize_vulkan()
 	generate_render_info();
 }
 
-bool vulkan_triangle_sample::render()
-{
-	device_->resetFences({*gpu_syn_});
-	try
-	{
-		const auto index = device_->acquireNextImageKHR(
-			*swap_chain_,
-			-1,
-			*swapchain_image_syn_,
-			*gpu_syn_
-		).value;
-		device_->waitForFences({*gpu_syn_}, true, -1);
-		graphics_queue_.submit(submit_infos_[index], nullptr);
-		present_queue_.presentKHR(present_infos_[index]);
-	}
-	catch(const SystemError& error)
-	{
-		if(error.code() == Result::eErrorOutOfDateKHR || error.code() == Result::eSuboptimalKHR)
-		{
-			re_initialize_vulkan();
-			return true;
-		}
-		std::cerr << error.what();
-		return false;
-	}
-	catch(const std::exception& e) { std::cerr << e.what(); return false; }
-	return true;
-}
-
-void vulkan_triangle_sample::main_loop()  noexcept
-{
-	while(!glfwWindowShouldClose(window_) && render())
-		glfwPollEvents();
-}
-
 void vulkan_triangle_sample::glfw_cleanup() noexcept
 {
 	glfwDestroyWindow(window_);
@@ -658,13 +629,11 @@ void vulkan_triangle_sample::glfw_cleanup() noexcept
 
 vulkan_triangle_sample::~vulkan_triangle_sample()
 {
-	device_->waitIdle();
 	glfw_cleanup();
 }
 
-void vulkan_triangle_sample::run()
+void vulkan_triangle_sample::initialize()
 {
 	initialize_window();
 	initialize_vulkan();
-	main_loop();
 }

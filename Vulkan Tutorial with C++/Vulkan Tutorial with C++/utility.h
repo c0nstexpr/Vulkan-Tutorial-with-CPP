@@ -16,6 +16,7 @@
 using std::string;
 using std::optional;
 using std::vector;
+using std::array;
 using std::set;
 using std::map;
 using std::pair;
@@ -37,6 +38,21 @@ extern istringstream csin;
 extern ostringstream csout;
 
 // ReSharper restore IdentifierTypo
+
+constexpr bool is_debug =
+#ifdef _DEBUG
+true
+#else
+false
+#endif
+;
+
+#define MEMBER_OFFSET(s,m)
+#if std::is_standard_layout_v<s>
+offsetof(s, m)
+#else
+static_assert(true, " struct is not standard layout");
+#endif
 
 template<typename T, typename U = T, typename Cmp>
 static bool is_included(const T& required, const U& available, const Cmp& cmp)

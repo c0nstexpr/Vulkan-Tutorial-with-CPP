@@ -5,7 +5,8 @@
 namespace vulkan
 {
 	template<typename T>
-	inline auto null_opt = Optional<T>(std::nullptr_t());
+	inline auto null_opt = Optional<T>(nullptr);
+
 	template<typename HandleType>
 	using default_deleter_type = typename UniqueHandleTraits<HandleType, DispatchLoaderDefault>::deleter;
 
@@ -160,7 +161,9 @@ namespace vulkan
 	using frame_buffer = object<Framebuffer>;
 	using shader_module = object<ShaderModule>;
 	using pipeline_layout = object<PipelineLayout>;
-	using graphics_pipeline = object<Pipeline, info_t<GraphicsPipeline>>;
+	using vertex_buffer = object<VertexBuffer::handle_type, info_t<VertexBuffer>>;
+	using device_memory = object<DeviceMemory>;
+	using graphics_pipeline = object<GraphicsPipeline::handle_type, info_t<GraphicsPipeline>>;
 	using command_pool = object<CommandPool>;
 	using command_buffer = object<CommandBuffer>;
 	using semaphore = object<Semaphore>;

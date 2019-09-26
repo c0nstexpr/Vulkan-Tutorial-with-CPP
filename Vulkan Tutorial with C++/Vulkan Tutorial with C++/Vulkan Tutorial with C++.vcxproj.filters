@@ -33,6 +33,12 @@
     <ClCompile Include="object.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan_info.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="origin sample.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkan_triangle_sample.h">

@@ -2,6 +2,7 @@
 
 #include "vulkan_object.h"
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #define GLFW_INCLUDE_VULKAN
 
@@ -287,20 +288,66 @@ namespace vulkan
 	template<typename InfoType, typename OwnerInfoType>
 	void initialize_command_pool(
 		const object<Device, OwnerInfoType>& device,
-		object<CommandPool, InfoType>& command_pool_objects,
+		object<CommandPool, InfoType>& command_pool_object,
 		const optional<AllocationCallbacks>& allocator = nullopt
 	)
 	{
 		try
 		{
-			command_pool_objects = object<CommandPool, InfoType>{
-				command_pool_objects.info,
+			command_pool_object = object<CommandPool, InfoType>{
+				command_pool_object.info,
 				device->createCommandPool(
-					command_pool_objects.info,
+					command_pool_object.info,
 					allocator ? *allocator : null_opt<const AllocationCallbacks>,
 					device.dispatch()
 				),
 				collector_type<command_pool>{device}
+			};
+		}
+		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+	}
+
+	template<typename InfoType, typename OwnerInfoType>
+	void initialize_vertex_buffer(
+		const object<Device, OwnerInfoType>& device,
+		object<VertexBuffer::handle_type, InfoType>& vertex_buffer_object,
+		const optional<AllocationCallbacks>& allocator = nullopt
+	)
+	{
+		try
+		{
+			vertex_buffer_object = object<VertexBuffer::handle_type, InfoType>{
+				vertex_buffer_object.info,
+				device->createBuffer(
+					vertex_buffer_object.info,
+					allocator ? *allocator : null_opt<const AllocationCallbacks>,
+					device.dispatch()
+				),
+				collector_type<vertex_buffer>{device}
+			};
+		}
+		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+	}
+
+	template<typename InfoType, typename OwnerInfoType>
+	void allocate_memory(
+		const object<Device, OwnerInfoType>& device,
+		object<DeviceMemory, InfoType>& memory_object,
+		const optional<AllocationCallbacks>& allocator = nullopt
+	)
+	{
+		try
+		{
+			memory_object = object<DeviceMemory, InfoType>{
+				memory_object.info,
+				device->allocateMemory(
+					memory_object.info,
+					allocator ? *allocator : null_opt<const AllocationCallbacks>,
+					device.dispatch()
+				),
+				collector_type<device_memory>{device}
 			};
 		}
 		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
@@ -416,6 +463,41 @@ namespace vulkan
 		catch(const std::exception& e) { std::cout << "Exception: " << e.what() << '\n'; }
 	}
 
+	template<typename MemoryInfoType, typename BufferInfoType, typename OwnerInfoType>
+	object<DeviceMemory, MemoryInfoType> allocate_buffer_memory(
+		const object<Device, OwnerInfoType>& device,
+		const object<Buffer, BufferInfoType>& buffer_object,
+		const PhysicalDevice& physical_device,
+		const MemoryPropertyFlags property_flags
+	)
+	{
+		object<DeviceMemory, MemoryInfoType> memory_object;
+		try
+		{
+			const auto& requirements = device->getBufferMemoryRequirements(*buffer_object);
+			decltype(memory_object.info.memoryTypeIndex) index = 0;
+			decltype(requirements.memoryTypeBits) index_bit = 1;
+			const auto& properties = physical_device.getMemoryProperties(device.dispatch());
+
+			for(index = 0; index < properties.memoryTypeCount; ++index)
+			{
+				if(
+					(requirements.memoryTypeBits & index_bit) &&
+					((properties.memoryTypes[index].propertyFlags & property_flags) == property_flags)
+					)
+					break;
+				index_bit <<= 1;
+			}
+
+			memory_object.info = MemoryInfoType{requirements.size, index};
+			allocate_memory(device, memory_object);
+			device->bindBufferMemory(*buffer_object, *memory_object, 0, device.dispatch());
+		}
+		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		return memory_object;
+	}
+
 	template<
 		typename PoolObjectRangeType,
 		typename InfoType,
@@ -424,7 +506,8 @@ namespace vulkan
 	>
 		void objects_reset(
 			PoolObjectRangeType & objects,
-			const object<OwnerHandleType, InfoType> & owner)
+			const object<OwnerHandleType, InfoType> & owner
+		)
 	{
 		using handle_type = typename PoolObjectRangeType::value_type::handle_type;
 
@@ -442,6 +525,42 @@ namespace vulkan
 		}
 	}
 
+	template<typename MemoryInfoType, typename OwnerInfoType, typename Input>
+	object<DeviceMemory, MemoryInfoType>& write(
+		object<DeviceMemory, MemoryInfoType>& memory_object,
+		const object<Device, OwnerInfoType>& device,
+		const Input& data_begin,
+		const Input& data_end,
+		const DeviceSize offset = 0,
+		const MemoryMapFlags flag = {}
+	)
+	{
+		using data_element_type = std::decay_t<decltype(*data_begin)>;
+
+		size_t data_size = 0;
+		for(auto begin = data_begin; begin != data_end; ++begin)data_size++;
+		data_size *= sizeof(data_element_type);
+
+		if(offset + data_size > static_cast<MemoryAllocateInfo>(memory_object.info).allocationSize)
+			throw std::runtime_error("data size is out of destination memory range");
+
+		try
+		{
+			data_element_type* mapped_data = static_cast<data_element_type*>(device->mapMemory(
+				*memory_object,
+				offset,
+				data_size,
+				flag,
+				device.dispatch()
+			));
+			std::copy(data_begin, data_end, mapped_data);
+			device->unmapMemory(*memory_object);
+		}
+		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		return memory_object;
+	}
+
 	[[nodiscard]] inline tuple<vector<AssemblyCompilationResult::element_type>, string,
 		shaderc_compilation_status> glsl_compile_to_spriv_asm(
 			const string&,
@@ -456,4 +575,40 @@ namespace vulkan
 			const char[],
 			const CompileOptions & = {}
 	);
+
+	template<typename T>
+	struct format;
+
+	template<>
+	struct format<glm::float32> { inline static constexpr auto value = Format::eR32Sfloat; };
+
+	template<>
+	struct format<glm::float64> { inline static constexpr auto value = Format::eR64Sfloat; };
+
+	template<>
+	struct format<glm::vec2> { inline static constexpr auto value = Format::eR32G32Sfloat; };
+
+	template<>
+	struct format<glm::ivec2> { inline static constexpr auto value = Format::eR32G32Sint; };
+
+	template<>
+	struct format<glm::vec3> { inline static constexpr auto value = Format::eR32G32B32Sfloat; };
+
+	template<>
+	struct format<glm::vec4> { inline static constexpr auto value = Format::eR32G32B32A32Sfloat; };
+
+	template<>
+	struct format<glm::uvec4> { inline static constexpr auto value = Format::eR64Sfloat; };
+
+	template<typename T>
+	constexpr auto format_v = format<T>::value;
+
+	struct vertex
+	{
+		glm::vec2 pos;
+		glm::vec3 color;
+
+		static const VertexInputBindingDescription description;
+		static const array<VertexInputAttributeDescription, 2> attribute_descriptions;
+	};
 }
