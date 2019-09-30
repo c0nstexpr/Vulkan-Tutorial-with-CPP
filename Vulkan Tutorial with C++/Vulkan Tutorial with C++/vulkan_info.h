@@ -30,11 +30,35 @@ namespace vulkan
 			const DeviceSize size_ = 0,
 			const SharingMode sharingMode_ = SharingMode::eExclusive,
 			const uint32_t queueFamilyIndexCount_ = 0,
-			const uint32_t * pQueueFamilyIndices_ = nullptr)
+			const uint32_t* pQueueFamilyIndices_ = nullptr)
 			: BufferCreateInfo(
 				flags_,
 				size_,
 				BufferUsageFlagBits::eVertexBuffer,
+				sharingMode_,
+				queueFamilyIndexCount_,
+				pQueueFamilyIndices_
+			)
+		{}
+	};
+
+	struct StagingBuffer
+	{
+		using handle_type = Buffer;
+	};
+
+	struct StagingBufferCreateInfo : BufferCreateInfo
+	{
+		StagingBufferCreateInfo(
+			const BufferCreateFlags flags_ = BufferCreateFlags(),
+			const DeviceSize size_ = 0,
+			const SharingMode sharingMode_ = SharingMode::eExclusive,
+			const uint32_t queueFamilyIndexCount_ = 0,
+			const uint32_t* pQueueFamilyIndices_ = nullptr)
+			: BufferCreateInfo(
+				flags_,
+				size_,
+				BufferUsageFlagBits::eTransferSrc,
 				sharingMode_,
 				queueFamilyIndexCount_,
 				pQueueFamilyIndices_
@@ -69,6 +93,13 @@ namespace vulkan
 	{
 		using handle_type = VertexBuffer::handle_type;
 		using type = VertexBufferCreateInfo;
+	};
+
+	template<>
+	struct info<StagingBuffer>
+	{
+		using handle_type = StagingBuffer::handle_type;
+		using type = StagingBufferCreateInfo;
 	};
 
 	template<>

@@ -26,8 +26,8 @@ namespace vulkan
 				)
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename T>
@@ -57,8 +57,8 @@ namespace vulkan
 				instance
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -80,8 +80,8 @@ namespace vulkan
 				collector_type<debug_messenger>{instance, allocator}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -102,8 +102,8 @@ namespace vulkan
 			}
 			else glfwCreateWindowSurface(*instance, window, nullptr, &surface_khr);
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 
 		surface_object = object<SurfaceKHR, InfoType>{surface_object.info, surface_khr, collector_type<surface>{instance}};
 	}
@@ -127,8 +127,8 @@ namespace vulkan
 				collector_type<swap_chain>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -150,8 +150,8 @@ namespace vulkan
 				collector_type<image_view>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -173,8 +173,8 @@ namespace vulkan
 				collector_type<render_pass>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -196,8 +196,8 @@ namespace vulkan
 				collector_type<shader_module>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -219,8 +219,8 @@ namespace vulkan
 				collector_type<pipeline_layout>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -258,8 +258,8 @@ namespace vulkan
 			}
 			);
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -281,8 +281,8 @@ namespace vulkan
 				collector_type<frame_buffer>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -304,31 +304,31 @@ namespace vulkan
 				collector_type<command_pool>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
-	void initialize_vertex_buffer(
+	void initialize_buffer(
 		const object<Device, OwnerInfoType>& device,
-		object<VertexBuffer::handle_type, InfoType>& vertex_buffer_object,
+		object<Buffer, InfoType>& buffer_object,
 		const optional<AllocationCallbacks>& allocator = nullopt
 	)
 	{
 		try
 		{
-			vertex_buffer_object = object<VertexBuffer::handle_type, InfoType>{
-				vertex_buffer_object.info,
+			buffer_object = object<Buffer, InfoType>{
+				buffer_object.info,
 				device->createBuffer(
-					vertex_buffer_object.info,
+					buffer_object.info,
 					allocator ? *allocator : null_opt<const AllocationCallbacks>,
 					device.dispatch()
 				),
-				collector_type<vertex_buffer>{device}
+				object_collector<Buffer>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -350,8 +350,8 @@ namespace vulkan
 				collector_type<device_memory>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType, typename Allocator>
@@ -381,8 +381,8 @@ namespace vulkan
 				);
 			}
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -413,8 +413,8 @@ namespace vulkan
 				);
 			}
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -436,8 +436,8 @@ namespace vulkan
 				collector_type<semaphore>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename InfoType, typename OwnerInfoType>
@@ -459,8 +459,8 @@ namespace vulkan
 				collector_type<semaphore>{device}
 			};
 		}
-		catch(const SystemError& err) { std::cout << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cout << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cout << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cout << "Exception: " << e.what() << '\n'; }
 	}
 
 	template<typename MemoryInfoType, typename BufferInfoType, typename OwnerInfoType>
@@ -493,8 +493,8 @@ namespace vulkan
 			allocate_memory(device, memory_object);
 			device->bindBufferMemory(*buffer_object, *memory_object, 0, device.dispatch());
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 		return memory_object;
 	}
 
@@ -505,8 +505,8 @@ namespace vulkan
 		typename OwnerHandleType = typename PoolObjectRangeType::value_type::owner_type
 	>
 		void objects_reset(
-			PoolObjectRangeType & objects,
-			const object<OwnerHandleType, InfoType> & owner
+			PoolObjectRangeType& objects,
+			const object<OwnerHandleType, InfoType>& owner
 		)
 	{
 		using handle_type = typename PoolObjectRangeType::value_type::handle_type;
@@ -521,7 +521,7 @@ namespace vulkan
 			);
 			owner->free(objects.front().getPool(), object_handles, owner.dispatch());
 
-			for(auto& object : objects)* object = nullptr;
+			for(auto& object : objects)*object = nullptr;
 		}
 	}
 
@@ -556,8 +556,8 @@ namespace vulkan
 			std::copy(data_begin, data_end, mapped_data);
 			device->unmapMemory(*memory_object);
 		}
-		catch(const SystemError& err) { std::cerr << "SystemError: " << err.what() << '\n'; }
-		catch(const std::exception& e) { std::cerr << "Exception: " << e.what() << '\n'; }
+		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
+		catch(const std::exception & e) { std::cerr << "Exception: " << e.what() << '\n'; }
 		return memory_object;
 	}
 

@@ -20,6 +20,7 @@ class vulkan_triangle_sample
 	void generate_pipeline_layout_create_info();
 	void generate_graphics_pipeline_create_info();
 	void generate_vertex_buffer_allocate_info();
+	void generate_staging_buffer_allocate_info();
 	void generate_graphics_command_pool_create_info();
 	void generate_graphics_command_buffer_allocate_info();
 	void generate_render_info();
@@ -74,6 +75,8 @@ class vulkan_triangle_sample
 		vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 		vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 	};
+	staging_buffer staging_buffer_;
+	device_memory staging_buffer_memory_;
 	vertex_buffer vertices_buffer_;
 	device_memory vertices_buffer_memory_;
 
@@ -107,7 +110,6 @@ public:
 
 		if(glfwWindowShouldClose(window_))
 			return false;
-
 		glfwPollEvents();
 
 		device_->resetFences({*gpu_syn_});
@@ -120,24 +122,16 @@ public:
 				*swap_chain_image_syn_,
 				*gpu_syn_
 			).value;
-			const auto& buffer = submit_infos_[index].command_buffers[0];
 
-			buffer.begin(command_buffer_begin_info_.info, device_.dispatch());
-			buffer.beginRenderPass(render_pass_begin_infos_[index].info, SubpassContents::eInline, device_.dispatch());
-			buffer.bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
-			buffer.bindVertexBuffers(0, {*vertices_buffer_}, {0}, device_.dispatch());
-			buffer.draw(vertices_.size(), 1, 0, 0, device_.dispatch());
-			buffer.endRenderPass(device_.dispatch());
-			buffer.end(device_.dispatch());
 			t(index);
-
-			graphics_queue_.submit({submit_infos_[index]}, nullptr);
 
 			device_->waitForFences({*gpu_syn_}, true, -1);
 
+			graphics_queue_.submit({submit_infos_[index]}, nullptr);
+
 			present_queue_.presentKHR(present_infos_[index]);
 		}
-		catch(const SystemError& error)
+		catch(const SystemError & error)
 		{
 			if(error.code() == Result::eErrorOutOfDateKHR || error.code() == Result::eSuboptimalKHR)
 			{
@@ -147,16 +141,16 @@ public:
 			std::cerr << error.what();
 			return false;
 		}
-		catch(const std::exception& e) { std::cerr << e.what(); return false; }
+		catch(const std::exception & e) { std::cerr << e.what(); return false; }
 
 		return true;
 	}
 
 	void flush_vertices_to_memory()
 	{
-		write(vertices_buffer_memory_, device_, vertices_.cbegin(), vertices_.cend());
+		write(staging_buffer_memory_, device_, vertices_.cbegin(), vertices_.cend());
 		device_->flushMappedMemoryRanges(
-			{{*vertices_buffer_memory_, 0, DeviceSize(-1)}},
+			{{*staging_buffer_memory_, 0, DeviceSize(-1)}},
 			device_.dispatch()
 		);
 	}

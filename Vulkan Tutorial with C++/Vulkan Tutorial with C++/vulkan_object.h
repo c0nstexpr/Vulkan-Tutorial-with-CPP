@@ -14,7 +14,7 @@ namespace vulkan
 	struct owner
 	{
 		using handle_type = HandleType;
-		using type =  decltype(std::declval<default_deleter_type<HandleType>>().getOwner());
+		using type = decltype(std::declval<default_deleter_type<HandleType>>().getOwner());
 	};
 
 	template<>
@@ -48,12 +48,12 @@ namespace vulkan
 	class object_traits :public UniqueHandle<HandleType, dispatch_type<HandleType>>
 	{
 	public:
-		using base =  UniqueHandle<HandleType, dispatch_type<HandleType>>;
+		using base = UniqueHandle<HandleType, dispatch_type<HandleType>>;
 		using handle_type = HandleType;
 		using info_type = InfoType;
 		using owner_type = owner_type<handle_type>;
 		using dispatch_type = dispatch_type<handle_type>;
-		using deleter_type =  deleter_type<handle_type>;
+		using deleter_type = deleter_type<handle_type>;
 
 		using base::base;
 
@@ -75,8 +75,8 @@ namespace vulkan
 	{
 	public:
 		using base = object_traits<HandleType, InfoType>;
-		using handle_type= typename base::handle_type;
-		using info_type= typename base::info_type;
+		using handle_type = typename base::handle_type;
+		using info_type = typename base::info_type;
 		using owner_type = typename base::owner_type;
 		using dispatch_type = typename base::dispatch_type;
 		using deleter_type = typename base::deleter_type;
@@ -101,8 +101,8 @@ namespace vulkan
 	{
 	public:
 		using base = object_traits<Instance, InfoType>;
-		using handle_type= typename base::handle_type;
-		using info_type= typename base::info_type;
+		using handle_type = typename base::handle_type;
+		using info_type = typename base::info_type;
 		using owner_type = typename base::owner_type;
 		using dispatch_type = typename base::dispatch_type;
 		using deleter_type = typename base::deleter_type;
@@ -127,8 +127,8 @@ namespace vulkan
 	{
 	public:
 		using base = object_traits<Device, InfoType>;
-		using handle_type= typename base::handle_type;
-		using info_type= typename base::info_type;
+		using handle_type = typename base::handle_type;
+		using info_type = typename base::info_type;
 		using owner_type = typename base::owner_type;
 		using dispatch_type = typename base::dispatch_type;
 		using deleter_type = typename base::deleter_type;
@@ -162,6 +162,7 @@ namespace vulkan
 	using shader_module = object<ShaderModule>;
 	using pipeline_layout = object<PipelineLayout>;
 	using vertex_buffer = object<VertexBuffer::handle_type, info_t<VertexBuffer>>;
+	using staging_buffer = object<StagingBuffer::handle_type, info_t<StagingBuffer>>;
 	using device_memory = object<DeviceMemory>;
 	using graphics_pipeline = object<GraphicsPipeline::handle_type, info_t<GraphicsPipeline>>;
 	using command_pool = object<CommandPool>;

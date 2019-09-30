@@ -31,6 +31,8 @@ using std::istringstream;
 using std::ostringstream;
 using std::filesystem::path;
 
+using namespace std::literals;
+
 // ReSharper disable IdentifierTypo
 extern ifstream cfin;
 extern ofstream cfout;
@@ -65,7 +67,7 @@ static bool is_included(const T& required, const U& available, const Cmp& cmp)
 }
 
 template<typename T, typename U = T>
-static bool is_included(const T & required, const U & available)
+static bool is_included(const T& required, const U& available)
 {
 	return std::all_of(required.cbegin(), required.cend(),
 		[&](const auto& r)

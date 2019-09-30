@@ -126,9 +126,9 @@ void vulkan_triangle_sample::generate_swap_chain_create_info()
 		required_format) == formats.end() ? formats.front() : required_format;
 
 	const auto& present_modes = physical_device_.getSurfacePresentModesKHR(*surface_);
-	const auto required_present_mode = PresentModeKHR::eMailbox;
+	const auto required_present_mode = PresentModeKHR::eImmediate;
 	const auto present_mode = std::find(present_modes.cbegin(), present_modes.cend(),
-		required_present_mode) == present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
+		required_present_mode) != present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
 
 	const auto& capabilities = physical_device_.getSurfaceCapabilitiesKHR(*surface_);
 
@@ -394,14 +394,22 @@ void vulkan_triangle_sample::generate_vertex_buffer_allocate_info()
 	vertices_buffer_.info = {
 		{},
 		vertex::description.stride * vertices_.size(),
-		SharingMode::eExclusive
+	};
+	vertices_buffer_.info.usage |= BufferUsageFlagBits::eTransferDst;
+}
+
+void vulkan_triangle_sample::generate_staging_buffer_allocate_info()
+{
+	staging_buffer_.info = {
+		{},
+		vertices_buffer_.info.size,
 	};
 }
 
 void vulkan_triangle_sample::generate_graphics_command_pool_create_info()
 {
 	graphics_command_pool_.info = {
-		CommandPoolCreateFlagBits::eResetCommandBuffer | CommandPoolCreateFlagBits::eTransient,
+		CommandPoolCreateFlagBits::eResetCommandBuffer,
 		graphics_queue_index_
 	};
 }
@@ -421,7 +429,7 @@ void vulkan_triangle_sample::generate_graphics_command_buffer_allocate_info()
 
 void vulkan_triangle_sample::generate_render_info()
 {
-	command_buffer_begin_info_.info = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eOneTimeSubmit};
+	command_buffer_begin_info_.info = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
 
 	render_pass_begin_infos_.resize(frame_buffers_.size());
 	submit_infos_.resize(graphics_command_buffers_.size());
@@ -441,15 +449,19 @@ void vulkan_triangle_sample::generate_render_info()
 			}
 		};
 
-		/*
 		buffer->begin(command_buffer_begin_info_.info, device_.dispatch());
+		buffer->copyBuffer(
+			*staging_buffer_,
+			*vertices_buffer_,
+			{BufferCopy{0, 0, staging_buffer_.info.size}},
+			device_.dispatch()
+		);
 		buffer->beginRenderPass(render_pass_begin_infos_[index].info, SubpassContents::eInline, device_.dispatch());
 		buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
 		buffer->bindVertexBuffers(0, {*vertices_buffer_}, {0}, device_.dispatch());
 		buffer->draw(vertices_.size(), 1, 0, 0, device_.dispatch());
 		buffer->endRenderPass(device_.dispatch());
 		buffer->end(device_.dispatch());
-		*/
 
 		submit_infos_[index] = info_proxy<SubmitInfo>{
 			vector<Semaphore>{*swap_chain_image_syn_},
@@ -537,9 +549,19 @@ void vulkan_triangle_sample::initialize_vulkan()
 	}
 
 	generate_vertex_buffer_allocate_info();
-	initialize_vertex_buffer(device_, vertices_buffer_);
+	initialize_buffer(device_, vertices_buffer_);
 	vertices_buffer_memory_ = allocate_buffer_memory<decltype(vertices_buffer_memory_)::info_type>(
-		device_, vertices_buffer_,
+		device_,
+		vertices_buffer_,
+		physical_device_,
+		MemoryPropertyFlagBits::eDeviceLocal
+		);
+
+	generate_staging_buffer_allocate_info();
+	initialize_buffer(device_, staging_buffer_);
+	staging_buffer_memory_ = allocate_buffer_memory<decltype(staging_buffer_memory_)::info_type>(
+		device_,
+		staging_buffer_,
 		physical_device_,
 		MemoryPropertyFlagBits::eHostVisible
 		);
