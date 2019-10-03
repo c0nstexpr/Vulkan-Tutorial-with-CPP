@@ -1,4 +1,4 @@
-﻿#include"vulkan_triangle_sample.h"
+﻿#include "vulkan_sample.h"
 #include <chrono>
 
 int main()
@@ -11,14 +11,18 @@ int main()
 	decltype(timer() - last_time) duration = 0s;
 	unsigned short frame_count = 0;
 	long long value = 0;
-	constexpr unsigned short scale = 500;
+	constexpr float scale = 500;
+	float a = 0.5;
 
 	try
 	{
-		vulkan_triangle_sample sample;
+		vulkan_sample sample;
 		const auto& buffer_record = [&](const uint32_t& index)
 		{
 			const auto& delta = timer() - last_time;
+			float angle;
+			float sin_v;
+			float cos_v;
 
 			duration += delta;
 			if(duration >= 1s)
@@ -27,18 +31,28 @@ int main()
 				frame_count = 0;
 				duration -= duration;
 			}
-
 			value += duration_cast<milliseconds>(delta).count();
-			if(value > pi* scale) value -= pi * scale;
-			for(size_t i = 0; i < sample.vertices().size(); ++i)
-				sample.vertices()[i].color[i] = static_cast<float>(std::sin(value / scale));
-			sample.flush_vertices_to_memory();
+			angle = value / scale;
+			if(angle > 2 * pi)
+			{
+				value = 0;
+				angle = 0;
+			}
 
+			sin_v = std::sin(angle);
+			cos_v = std::cos(angle);
+
+			sample.vertices()[0].pos = {sin_v, cos_v * a};
+			sample.vertices()[1].pos = {-cos_v, sin_v * a};
+			sample.vertices()[2].pos = {-sin_v, -cos_v * a};
+			sample.vertices()[3].pos = {cos_v, -sin_v * a};
+			sample.flush_vertices_to_memory();
 			frame_count++;
 			last_time = timer();
 		};
 
 		sample.initialize();
+		sample.flush_indices_to_memory();
 
 		while(sample.render(buffer_record));
 	}

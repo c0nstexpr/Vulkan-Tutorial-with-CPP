@@ -163,6 +163,7 @@ namespace vulkan
 	using pipeline_layout = object<PipelineLayout>;
 	using vertex_buffer = object<VertexBuffer::handle_type, info_t<VertexBuffer>>;
 	using staging_buffer = object<StagingBuffer::handle_type, info_t<StagingBuffer>>;
+	using indices_buffer = object<IndicesBuffer::handle_type, info_t<IndicesBuffer>>;
 	using device_memory = object<DeviceMemory>;
 	using graphics_pipeline = object<GraphicsPipeline::handle_type, info_t<GraphicsPipeline>>;
 	using command_pool = object<CommandPool>;

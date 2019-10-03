@@ -1,10 +1,9 @@
 ﻿#pragma once
 
 #include "vulkan_utility.h"
-
 using namespace vulkan;
 
-class vulkan_triangle_sample
+class vulkan_sample
 {
 	void initialize_window() noexcept;
 
@@ -19,8 +18,10 @@ class vulkan_triangle_sample
 	void generate_shader_module_create_infos();
 	void generate_pipeline_layout_create_info();
 	void generate_graphics_pipeline_create_info();
-	void generate_vertex_buffer_allocate_info();
-	void generate_staging_buffer_allocate_info();
+	void generate_vertices_buffer_allocate_info();
+	void generate_indices_buffer_allocate_info();
+	void generate_vertices_staging_buffer_allocate_info();
+	void generate_indices_staging_buffer_allocate_info();
 	void generate_graphics_command_pool_create_info();
 	void generate_graphics_command_buffer_allocate_info();
 	void generate_render_info();
@@ -70,15 +71,21 @@ class vulkan_triangle_sample
 
 	graphics_pipeline graphics_pipeline_;
 
-	array<vertex, 3> vertices_ = {
-		vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-		vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+	array<vertex, 4> vertices_ = {
+		vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+		vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+		vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
 	};
-	staging_buffer staging_buffer_;
-	device_memory staging_buffer_memory_;
+	array<uint32_t, 6> indices_ = {0, 1, 2, 2, 3, 0};
 	vertex_buffer vertices_buffer_;
 	device_memory vertices_buffer_memory_;
+	indices_buffer indices_buffer_;
+	device_memory indices_buffer_memory_;
+	staging_buffer vertices_staging_buffer_;
+	device_memory vertices_staging_buffer_memory_;
+	staging_buffer indices_staging_buffer_;
+	device_memory indices_staging_buffer_memory_;
 
 	command_pool graphics_command_pool_;
 
@@ -95,11 +102,11 @@ class vulkan_triangle_sample
 	fence gpu_syn_;
 
 public:
-	vulkan_triangle_sample() = default;
-	~vulkan_triangle_sample();
+	vulkan_sample() = default;
+	~vulkan_sample();
 
-	vulkan_triangle_sample(vulkan_triangle_sample&&) = default;
-	vulkan_triangle_sample& operator=(vulkan_triangle_sample&&) noexcept = default;
+	vulkan_sample(vulkan_sample&&) = default;
+	vulkan_sample& operator=(vulkan_sample&&) noexcept = default;
 
 	void initialize();
 
@@ -148,9 +155,18 @@ public:
 
 	void flush_vertices_to_memory()
 	{
-		write(staging_buffer_memory_, device_, vertices_.cbegin(), vertices_.cend());
+		write(vertices_staging_buffer_memory_, device_, vertices_.cbegin(), vertices_.cend());
 		device_->flushMappedMemoryRanges(
-			{{*staging_buffer_memory_, 0, DeviceSize(-1)}},
+			{{*vertices_staging_buffer_memory_, 0, DeviceSize(-1)}},
+			device_.dispatch()
+		);
+	}
+
+	void flush_indices_to_memory()
+	{
+		write(indices_staging_buffer_memory_, device_, indices_.cbegin(), indices_.cend());
+		device_->flushMappedMemoryRanges(
+			{{*indices_staging_buffer_memory_, 0, DeviceSize(-1)}},
 			device_.dispatch()
 		);
 	}
@@ -189,6 +205,7 @@ public:
 	}
 	[[nodiscard]] const auto& vertices()const { return vertices_; }
 	[[nodiscard]] auto& vertices() { return vertices_; }
+	[[nodiscard]] auto& indices() { return indices_; }
 	[[nodiscard]] const auto& vertices_buffer()const { return vertices_buffer_; }
 	[[nodiscard]] const auto& vertices_buffer_memory()const { return vertices_buffer_memory_; }
 	[[nodiscard]] const auto& command_pool_create_info()const { return graphics_command_pool_.info; }

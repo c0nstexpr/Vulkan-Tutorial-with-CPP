@@ -160,14 +160,14 @@
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="vulkan_info.cpp" />
     <ClCompile Include="vulkan_object.cpp" />
-    <ClCompile Include="vulkan_triangle_sample.cpp" />
+    <ClCompile Include="vulkan_sample.cpp" />
     <ClCompile Include="vulkan_utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utility.h" />
     <ClInclude Include="vulkan_info.h" />
     <ClInclude Include="vulkan_object.h" />
-    <ClInclude Include="vulkan_triangle_sample.h" />
+    <ClInclude Include="vulkan_sample.h" />
     <ClInclude Include="vulkan_utility.h" />
   </ItemGroup>
   <ItemGroup>

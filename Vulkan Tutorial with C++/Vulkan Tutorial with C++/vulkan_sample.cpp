@@ -1,8 +1,6 @@
-﻿#include "vulkan_triangle_sample.h"
-#include <vulkan/vulkan.hpp>
-#include <type_traits>
+﻿#include "vulkan_sample.h"
 
-void vulkan_triangle_sample::initialize_window() noexcept
+void vulkan_sample::initialize_window() noexcept
 {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -10,7 +8,7 @@ void vulkan_triangle_sample::initialize_window() noexcept
 	window_ = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
 }
 
-void vulkan_triangle_sample::generate_debug_messenger_create_info()
+void vulkan_sample::generate_debug_messenger_create_info()
 {
 	debug_messenger_ = debug_messenger{
 		{
@@ -30,7 +28,7 @@ void vulkan_triangle_sample::generate_debug_messenger_create_info()
 	};
 }
 
-void vulkan_triangle_sample::generate_instance_create_info()
+void vulkan_sample::generate_instance_create_info()
 {
 	auto& info = instance_.info;
 	info.application_info = info_proxy<ApplicationInfo>{"Hello Triangle", "No Engine"};
@@ -67,13 +65,13 @@ void vulkan_triangle_sample::generate_instance_create_info()
 	info.set_proxy();
 }
 
-bool vulkan_triangle_sample::generate_physical_device(const PhysicalDevice& d)
+bool vulkan_sample::generate_physical_device(const PhysicalDevice& d)
 {
 	size_t i = 0;
-	for(const auto& p : d.getQueueFamilyProperties())
-	{
-		if(p.queueCount > 0)
+	if(d.getProperties().deviceType == PhysicalDeviceType::eDiscreteGpu)
+		for(const auto& p : d.getQueueFamilyProperties())
 		{
+			if(p.queueCount == 0) continue;
 			bool done = true;
 
 			if(graphics_queue_index_ == -1)
@@ -85,15 +83,13 @@ bool vulkan_triangle_sample::generate_physical_device(const PhysicalDevice& d)
 				else done = false;
 
 			if(done) return true;
+			++i;
 		}
-
-		++i;
-	}
 
 	return false;
 }
 
-void vulkan_triangle_sample::generate_device_create_info()
+void vulkan_sample::generate_device_create_info()
 {
 	using value_type = decltype(std::declval<info_t<Device>>().queue_create_infos)::value_type;
 
@@ -118,7 +114,7 @@ void vulkan_triangle_sample::generate_device_create_info()
 		throw std::runtime_error("requested device extension is not available!");
 }
 
-void vulkan_triangle_sample::generate_swap_chain_create_info()
+void vulkan_sample::generate_swap_chain_create_info()
 {
 	const auto& formats = physical_device_.getSurfaceFormatsKHR(*surface_);
 	const SurfaceFormatKHR required_format{Format::eB8G8R8A8Unorm, ColorSpaceKHR::eSrgbNonlinear};
@@ -126,9 +122,12 @@ void vulkan_triangle_sample::generate_swap_chain_create_info()
 		required_format) == formats.end() ? formats.front() : required_format;
 
 	const auto& present_modes = physical_device_.getSurfacePresentModesKHR(*surface_);
-	const auto required_present_mode = PresentModeKHR::eImmediate;
-	const auto present_mode = std::find(present_modes.cbegin(), present_modes.cend(),
-		required_present_mode) != present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
+	const auto required_present_mode = PresentModeKHR::eFifo;
+	const auto present_mode = std::find(
+		present_modes.cbegin(),
+		present_modes.cend(),
+		required_present_mode
+	) != present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
 
 	const auto& capabilities = physical_device_.getSurfaceCapabilitiesKHR(*surface_);
 
@@ -169,7 +168,7 @@ void vulkan_triangle_sample::generate_swap_chain_create_info()
 	else info.info.imageSharingMode = SharingMode::eExclusive;
 }
 
-void vulkan_triangle_sample::generate_image_view_create_infos()
+void vulkan_sample::generate_image_view_create_infos()
 {
 	auto&& images = device_->getSwapchainImagesKHR(*swap_chain_);
 
@@ -193,7 +192,7 @@ void vulkan_triangle_sample::generate_image_view_create_infos()
 	);
 }
 
-void vulkan_triangle_sample::generate_render_pass_create_info()
+void vulkan_sample::generate_render_pass_create_info()
 {
 	//the first subpass deal with the color attachment
 	AttachmentDescription color_attachment = {
@@ -230,7 +229,7 @@ void vulkan_triangle_sample::generate_render_pass_create_info()
 	};
 }
 
-void vulkan_triangle_sample::generate_framebuffer_create_infos()
+void vulkan_sample::generate_framebuffer_create_infos()
 {
 	frame_buffers_.resize(image_views_.size());
 	std::generate(
@@ -256,7 +255,7 @@ void vulkan_triangle_sample::generate_framebuffer_create_infos()
 	);
 }
 
-void vulkan_triangle_sample::generate_shader_module_create_infos()
+void vulkan_sample::generate_shader_module_create_infos()
 {
 	CompileOptions options;
 	const auto vertex_shader_code_path = path("shaders") / path("shader.vert");
@@ -300,10 +299,10 @@ void vulkan_triangle_sample::generate_shader_module_create_infos()
 }
 
 //For now we don't need to do anything about the create present_info.
-void vulkan_triangle_sample::generate_pipeline_layout_create_info()
+void vulkan_sample::generate_pipeline_layout_create_info()
 {}
 
-void vulkan_triangle_sample::generate_graphics_pipeline_create_info()
+void vulkan_sample::generate_graphics_pipeline_create_info()
 {
 	auto vertex_shader_stage = info_proxy<PipelineShaderStageCreateInfo>{
 		"main",
@@ -389,7 +388,7 @@ void vulkan_triangle_sample::generate_graphics_pipeline_create_info()
 	graphics_pipeline_.info.info.layout = *pipeline_layout_;
 }
 
-void vulkan_triangle_sample::generate_vertex_buffer_allocate_info()
+void vulkan_sample::generate_vertices_buffer_allocate_info()
 {
 	vertices_buffer_.info = {
 		{},
@@ -398,15 +397,32 @@ void vulkan_triangle_sample::generate_vertex_buffer_allocate_info()
 	vertices_buffer_.info.usage |= BufferUsageFlagBits::eTransferDst;
 }
 
-void vulkan_triangle_sample::generate_staging_buffer_allocate_info()
+void vulkan_sample::generate_indices_buffer_allocate_info()
 {
-	staging_buffer_.info = {
+	indices_buffer_.info = {
+		{},
+		sizeof indices_.front() * indices_.size(),
+	};
+	indices_buffer_.info.usage |= BufferUsageFlagBits::eTransferDst;
+}
+
+void vulkan_sample::generate_vertices_staging_buffer_allocate_info()
+{
+	vertices_staging_buffer_.info = {
 		{},
 		vertices_buffer_.info.size,
 	};
 }
 
-void vulkan_triangle_sample::generate_graphics_command_pool_create_info()
+void vulkan_sample::generate_indices_staging_buffer_allocate_info()
+{
+	indices_staging_buffer_.info = {
+		{},
+		indices_buffer_.info.size,
+	};
+}
+
+void vulkan_sample::generate_graphics_command_pool_create_info()
 {
 	graphics_command_pool_.info = {
 		CommandPoolCreateFlagBits::eResetCommandBuffer,
@@ -414,7 +430,7 @@ void vulkan_triangle_sample::generate_graphics_command_pool_create_info()
 	};
 }
 
-void vulkan_triangle_sample::generate_graphics_command_buffer_allocate_info()
+void vulkan_sample::generate_graphics_command_buffer_allocate_info()
 {
 	graphics_command_buffers_.resize(frame_buffers_.size());
 	for(auto& buffer : graphics_command_buffers_)
@@ -427,14 +443,13 @@ void vulkan_triangle_sample::generate_graphics_command_buffer_allocate_info()
 	};
 }
 
-void vulkan_triangle_sample::generate_render_info()
+void vulkan_sample::generate_render_info()
 {
 	command_buffer_begin_info_.info = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
 
 	render_pass_begin_infos_.resize(frame_buffers_.size());
 	submit_infos_.resize(graphics_command_buffers_.size());
 	present_infos_.resize(submit_infos_.size());
-
 	std::for_each(
 		graphics_command_buffers_.begin(),
 		graphics_command_buffers_.end(),
@@ -451,15 +466,22 @@ void vulkan_triangle_sample::generate_render_info()
 
 		buffer->begin(command_buffer_begin_info_.info, device_.dispatch());
 		buffer->copyBuffer(
-			*staging_buffer_,
+			*vertices_staging_buffer_,
 			*vertices_buffer_,
-			{BufferCopy{0, 0, staging_buffer_.info.size}},
+			{BufferCopy{0, 0, vertices_staging_buffer_.info.size}},
+			device_.dispatch()
+		);
+		buffer->copyBuffer(
+			*indices_staging_buffer_,
+			*indices_buffer_,
+			{BufferCopy{0, 0, indices_buffer_.info.size}},
 			device_.dispatch()
 		);
 		buffer->beginRenderPass(render_pass_begin_infos_[index].info, SubpassContents::eInline, device_.dispatch());
 		buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
 		buffer->bindVertexBuffers(0, {*vertices_buffer_}, {0}, device_.dispatch());
-		buffer->draw(vertices_.size(), 1, 0, 0, device_.dispatch());
+		buffer->bindIndexBuffer({*indices_buffer_}, {0}, index_type_v<decltype(indices_)::value_type>, device_.dispatch());
+		buffer->drawIndexed(static_cast<uint32_t>(indices_.size()), 1, 0, 0, 0, device_.dispatch());
 		buffer->endRenderPass(device_.dispatch());
 		buffer->end(device_.dispatch());
 
@@ -481,12 +503,12 @@ void vulkan_triangle_sample::generate_render_info()
 	);
 }
 
-void vulkan_triangle_sample::generate_fence_create_info()
+void vulkan_sample::generate_fence_create_info()
 {
 	gpu_syn_.info.flags = FenceCreateFlagBits::eSignaled;
 }
 
-VkBool32 vulkan_triangle_sample::debug_callback(
+VkBool32 vulkan_sample::debug_callback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT flag_bits,
 	VkDebugUtilsMessageTypeFlagsEXT  type_flags,
 	const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
@@ -499,7 +521,7 @@ VkBool32 vulkan_triangle_sample::debug_callback(
 	return VK_FALSE;
 }
 
-void vulkan_triangle_sample::initialize_vulkan()
+void vulkan_sample::initialize_vulkan()
 {
 	generate_instance_create_info();
 	initialize_instance(instance_);
@@ -548,7 +570,7 @@ void vulkan_triangle_sample::initialize_vulkan()
 		graphics_pipeline_ = std::move(graphics_pipelines_.front());
 	}
 
-	generate_vertex_buffer_allocate_info();
+	generate_vertices_buffer_allocate_info();
 	initialize_buffer(device_, vertices_buffer_);
 	vertices_buffer_memory_ = allocate_buffer_memory<decltype(vertices_buffer_memory_)::info_type>(
 		device_,
@@ -557,11 +579,29 @@ void vulkan_triangle_sample::initialize_vulkan()
 		MemoryPropertyFlagBits::eDeviceLocal
 		);
 
-	generate_staging_buffer_allocate_info();
-	initialize_buffer(device_, staging_buffer_);
-	staging_buffer_memory_ = allocate_buffer_memory<decltype(staging_buffer_memory_)::info_type>(
+	generate_indices_buffer_allocate_info();
+	initialize_buffer(device_, indices_buffer_);
+	indices_buffer_memory_ = allocate_buffer_memory<decltype(indices_buffer_memory_)::info_type>(
 		device_,
-		staging_buffer_,
+		indices_buffer_,
+		physical_device_,
+		MemoryPropertyFlagBits::eDeviceLocal
+		);
+
+	generate_vertices_staging_buffer_allocate_info();
+	initialize_buffer(device_, vertices_staging_buffer_);
+	vertices_staging_buffer_memory_ = allocate_buffer_memory<decltype(vertices_staging_buffer_memory_)::info_type>(
+		device_,
+		vertices_staging_buffer_,
+		physical_device_,
+		MemoryPropertyFlagBits::eHostVisible
+		);
+
+	generate_indices_staging_buffer_allocate_info();
+	initialize_buffer(device_, indices_staging_buffer_);
+	indices_staging_buffer_memory_ = allocate_buffer_memory<decltype(indices_staging_buffer_memory_)::info_type>(
+		device_,
+		indices_staging_buffer_,
 		physical_device_,
 		MemoryPropertyFlagBits::eHostVisible
 		);
@@ -582,7 +622,7 @@ void vulkan_triangle_sample::initialize_vulkan()
 	generate_render_info();
 }
 
-void vulkan_triangle_sample::re_initialize_vulkan()
+void vulkan_sample::re_initialize_vulkan()
 {
 	{
 		int width = 0, height = 0;
@@ -642,19 +682,19 @@ void vulkan_triangle_sample::re_initialize_vulkan()
 	generate_render_info();
 }
 
-void vulkan_triangle_sample::glfw_cleanup() noexcept
+void vulkan_sample::glfw_cleanup() noexcept
 {
 	glfwDestroyWindow(window_);
 	glfwTerminate();
 	window_ = nullptr;
 }
 
-vulkan_triangle_sample::~vulkan_triangle_sample()
+vulkan_sample::~vulkan_sample()
 {
 	glfw_cleanup();
 }
 
-void vulkan_triangle_sample::initialize()
+void vulkan_sample::initialize()
 {
 	initialize_window();
 	initialize_vulkan();

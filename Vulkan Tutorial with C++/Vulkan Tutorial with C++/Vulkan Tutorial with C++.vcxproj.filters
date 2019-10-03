@@ -21,9 +21,6 @@
     <ClCompile Include="vulkan_object.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="vulkan_triangle_sample.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="vulkan_utility.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -39,11 +36,11 @@
     <ClCompile Include="origin sample.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan_sample.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="vulkan_triangle_sample.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="vulkan_utility.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -54,6 +51,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="vulkan_object.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_sample.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

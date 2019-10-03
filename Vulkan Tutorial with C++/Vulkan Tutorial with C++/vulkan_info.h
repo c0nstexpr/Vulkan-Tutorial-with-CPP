@@ -66,6 +66,30 @@ namespace vulkan
 		{}
 	};
 
+	struct IndicesBuffer
+	{
+		using handle_type = Buffer;
+	};
+
+	struct IndexBufferCreateInfo : BufferCreateInfo
+	{
+		IndexBufferCreateInfo(
+			const BufferCreateFlags flags_ = BufferCreateFlags(),
+			const DeviceSize size_ = 0,
+			const SharingMode sharingMode_ = SharingMode::eExclusive,
+			const uint32_t queueFamilyIndexCount_ = 0,
+			const uint32_t* pQueueFamilyIndices_ = nullptr)
+			: BufferCreateInfo(
+				flags_,
+				size_,
+				BufferUsageFlagBits::eIndexBuffer,
+				sharingMode_,
+				queueFamilyIndexCount_,
+				pQueueFamilyIndices_
+			)
+		{}
+	};
+
 	// ReSharper restore CppInconsistentNaming
 
 	template<typename T>
@@ -100,6 +124,13 @@ namespace vulkan
 	{
 		using handle_type = StagingBuffer::handle_type;
 		using type = StagingBufferCreateInfo;
+	};
+
+	template<>
+	struct info<IndicesBuffer>
+	{
+		using handle_type = IndicesBuffer::handle_type;
+		using type = IndexBufferCreateInfo;
 	};
 
 	template<>

@@ -538,22 +538,24 @@ namespace vulkan
 		using data_element_type = std::decay_t<decltype(*data_begin)>;
 
 		size_t data_size = 0;
-		for(auto begin = data_begin; begin != data_end; ++begin)data_size++;
-		data_size *= sizeof(data_element_type);
+		data_size = sizeof(data_element_type) * std::distance(data_begin, data_end);
 
 		if(offset + data_size > static_cast<MemoryAllocateInfo>(memory_object.info).allocationSize)
 			throw std::runtime_error("data size is out of destination memory range");
 
 		try
 		{
-			data_element_type* mapped_data = static_cast<data_element_type*>(device->mapMemory(
-				*memory_object,
-				offset,
-				data_size,
-				flag,
-				device.dispatch()
-			));
-			std::copy(data_begin, data_end, mapped_data);
+			std::copy(
+				data_begin,
+				data_end,
+				static_cast<data_element_type*>(device->mapMemory(
+					*memory_object,
+					offset,
+					data_size,
+					flag,
+					device.dispatch()
+				))
+			);
 			device->unmapMemory(*memory_object);
 		}
 		catch(const SystemError & err) { std::cerr << "SystemError: " << err.what() << '\n'; }
@@ -602,6 +604,24 @@ namespace vulkan
 
 	template<typename T>
 	constexpr auto format_v = format<T>::value;
+
+	template<typename T = void>
+	struct index_type;
+
+	template<>
+	struct index_type<uint32_t> { static constexpr auto value = IndexType::eUint32; };
+
+	template<>
+	struct index_type<uint16_t> { static constexpr auto value = IndexType::eUint16; };
+
+	template<>
+	struct index_type<uint8_t> { static constexpr auto value = IndexType::eUint8EXT; };
+
+	template<>
+	struct index_type<void> { static constexpr auto value = IndexType::eNoneNV; };
+
+	template<typename T = void>
+	constexpr auto index_type_v = index_type<T>::value;
 
 	struct vertex
 	{

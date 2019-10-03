@@ -613,7 +613,7 @@ namespace vulkan
 
 	info_proxy<ShaderModuleCreateInfo>::info_proxy(info_type info) :
 		info(std::move(info)),
-		codes(info.pCode, info.pCode + info.codeSize / sizeof(decltype(codes)::value_type))
+		codes(info.pCode, info.pCode + info.codeSize / sizeof codes.front())
 	{
 		set_proxy();
 	}
@@ -655,7 +655,7 @@ namespace vulkan
 	void info_proxy<ShaderModuleCreateInfo>::set_proxy()
 	{
 		info.pCode = codes.data();
-		info.codeSize = codes.size() * sizeof(decltype(codes)::value_type);
+		info.codeSize = codes.size() * sizeof codes.front();
 	}
 
 	info_proxy<SpecializationInfo>::info_proxy(decltype(map_entries) p, decltype(info) i) :
