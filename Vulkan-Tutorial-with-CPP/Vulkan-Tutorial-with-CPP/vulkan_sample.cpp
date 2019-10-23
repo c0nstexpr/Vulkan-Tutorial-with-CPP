@@ -10,6 +10,9 @@ void vulkan_sample::initialize_window() noexcept
 
 void vulkan_sample::generate_debug_messenger_create_info()
 {
+	using debug_messenger_type = decltype(debug_messenger_);
+	using debug_messenger_info_type = debug_messenger_type::info_type;
+
 	debug_messenger_ = debug_messenger{
 		{
 			{},
@@ -30,39 +33,45 @@ void vulkan_sample::generate_debug_messenger_create_info()
 
 void vulkan_sample::generate_instance_create_info()
 {
-	auto& info = instance_.info;
-	info.application_info = info_proxy<ApplicationInfo>{"Hello Triangle", "No Engine"};
+	using instance_type = decltype(instance_);
+	using instance_info_type = instance_type::info_type;
+	vector<string> ext_names;
+	vector<string> layer_names;
+	InstanceCreateInfo info;
+
 	{
 		uint32_t count;
 		const auto extensions = glfwGetRequiredInstanceExtensions(&count);
-		info.extension_names.resize(count);
-		std::generate(
-			info.extension_names.begin(),
-			info.extension_names.end(),
-			[&, i = 0]()mutable {return extensions[i++]; }
-		);
+		ext_names.resize(count);
+		std::transform(extensions, extensions + count, ext_names.begin(), [&](const auto& str)mutable { return str; });
 	}
+
 	if constexpr(is_debug)
 	{
-		info.layer_names = {"VK_LAYER_KHRONOS_validation"};
+		layer_names.push_back("VK_LAYER_KHRONOS_validation");
 		if(!is_included(
-			info.layer_names,
+			layer_names,
 			enumerateInstanceLayerProperties(),
 			[](const auto& layer, const auto& p)->bool { return layer == p.layerName; }
 		))
 			throw std::runtime_error("validation layers requested, but not available!");
 
 		generate_debug_messenger_create_info();
-		info.info.pNext = &debug_messenger_.info;
-		info.extension_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		info.pNext = &debug_messenger_.info();
+		ext_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 	if(!is_included(
-		info.extension_names,
+		ext_names,
 		enumerateInstanceExtensionProperties(),
 		[](const auto& layer, const auto& p)->bool { return layer == p.extensionName; }))
 		throw std::runtime_error("requested instance extension is not available!");
 
-	info.set_proxy();
+	instance_ = instance_type{instance_info_type{
+		info_proxy<ApplicationInfo>{"Hello Vulkan", "No Engine"},
+		std::move(ext_names),
+		std::move(layer_names),
+		std::move(info)
+	}};
 }
 
 bool vulkan_sample::generate_physical_device(const PhysicalDevice& d)
@@ -91,23 +100,19 @@ bool vulkan_sample::generate_physical_device(const PhysicalDevice& d)
 
 void vulkan_sample::generate_device_create_info()
 {
-	using value_type = decltype(std::declval<info_t<Device>>().queue_create_infos)::value_type;
+	using device_type = decltype(device_);
+	using device_info_type = device_type::info_type;
+	using set_type = decay_to_origin_t<decltype(device_.info().queue_create_infos_set_property())>;
 
-	device_.info = decltype(device_.info){
+	device_ = device_type{device_info_type{
 		{
-			{
-				graphics_queue_index_,
-					info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
-			},
-			{
-				present_queue_index_,
-				info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
-			}
+			info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}},
+			info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
 		},
-			vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME}
+		vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME}}
 	};
 	if(!is_included(
-		device_.info.extension_names,
+		device_.info().extension_name_strs_property(),
 		physical_device_.enumerateDeviceExtensionProperties(),
 		[](const auto& layer, const auto& p)->bool { return layer == p.extensionName; }
 	))
@@ -116,6 +121,10 @@ void vulkan_sample::generate_device_create_info()
 
 void vulkan_sample::generate_swap_chain_create_info()
 {
+	using swap_chain_type = decltype(swap_chain_);
+	using swap_chain_info_type = decltype(swap_chain_)::info_type;
+	using set_type = decay_to_origin_t<decltype(swap_chain_.info().queue_family_indices_set_property())>;
+
 	const auto& formats = physical_device_.getSurfaceFormatsKHR(*surface_);
 	const SurfaceFormatKHR required_format{Format::eB8G8R8A8Unorm, ColorSpaceKHR::eSrgbNonlinear};
 	const auto available_format = std::find(formats.cbegin(), formats.cend(),
@@ -123,11 +132,9 @@ void vulkan_sample::generate_swap_chain_create_info()
 
 	const auto& present_modes = physical_device_.getSurfacePresentModesKHR(*surface_);
 	const auto required_present_mode = PresentModeKHR::eFifo;
-	const auto present_mode = std::find(
-		present_modes.cbegin(),
-		present_modes.cend(),
-		required_present_mode
-	) != present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
+	const auto present_mode =
+		std::find(present_modes.cbegin(), present_modes.cend(), required_present_mode) !=
+		present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
 
 	const auto& capabilities = physical_device_.getSurfaceCapabilitiesKHR(*surface_);
 
@@ -137,10 +144,17 @@ void vulkan_sample::generate_swap_chain_create_info()
 		std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
 		std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
 	};
-	auto& info = swap_chain_.info;
-	info = info_t<SwapchainKHR>{
-		{},
-		{
+	auto sharing_mode = SharingMode::eConcurrent;
+	set_type queue_indices;
+
+	if(device_.info().queue_create_infos_set_property().size() > 1)
+		for(const auto& info : device_.info().queue_create_infos_set_property())
+			queue_indices.insert(info.info.queueFamilyIndex);
+	else sharing_mode = SharingMode::eExclusive;
+
+	swap_chain_ = swap_chain_type{swap_chain_info_type{
+		std::move(queue_indices),
+		SwapchainCreateInfoKHR{
 			{},
 			*surface_,
 			std::min(capabilities.minImageCount + 1, capabilities.maxImageCount),
@@ -149,55 +163,51 @@ void vulkan_sample::generate_swap_chain_create_info()
 			extent,
 			1,
 			ImageUsageFlagBits::eColorAttachment,
-			SharingMode::eConcurrent,
+			sharing_mode,
 			0,
 			nullptr,
 			capabilities.currentTransform,
 			CompositeAlphaFlagBitsKHR::eOpaque,
 			present_mode,
-			true
-		}
-	};
-
-	if(device_.info.queue_create_infos.size() > 1)
-	{
-		for(const auto& pair : device_.info.queue_create_infos)
-			info.queue_family_indices.insert(pair.first);
-		info.set_proxy();
+			true,
 	}
-	else info.info.imageSharingMode = SharingMode::eExclusive;
+	}};
 }
 
 void vulkan_sample::generate_image_view_create_infos()
 {
+	using image_view_type = decltype(image_views_)::value_type;
+
 	auto&& images = device_->getSwapchainImagesKHR(*swap_chain_);
 
 	image_views_.resize(images.size());
-	std::generate(
+	std::transform(
+		images.begin(),
+		images.end(),
 		image_views_.begin(),
-		image_views_.end(),
-		[&images, this, i = size_t{0}]()mutable
-	{
-		return image_view{
-			{
+		[this](decltype(*images.begin()) image)mutable
+		{
+			return image_view_type{{
 				{},
-				std::move(images[i++]),
+				std::move(image),
 				ImageViewType::e2D,
-				swap_chain_.info.info.imageFormat,
+				swap_chain_.info().info.imageFormat,
 				ComponentMapping{},
 				ImageSubresourceRange{ImageAspectFlagBits::eColor, 0, 1, 0, 1}
-			}
-		};
-	}
+				}};
+		}
 	);
 }
 
 void vulkan_sample::generate_render_pass_create_info()
 {
+	using render_pass_type = decltype(render_pass_);
+	using render_pass_info_type = decltype(render_pass_)::info_type;
+
 	//the first subpass deal with the color attachment
 	AttachmentDescription color_attachment = {
 		{},
-		swap_chain_.info.info.imageFormat,
+		swap_chain_.info().info.imageFormat,
 		SampleCountFlagBits::e1,
 		AttachmentLoadOp::eClear,
 		AttachmentStoreOp::eStore,
@@ -220,43 +230,45 @@ void vulkan_sample::generate_render_pass_create_info()
 		AccessFlagBits::eColorAttachmentRead | AccessFlagBits::eColorAttachmentWrite,
 	};
 
-	render_pass_ = render_pass{
-		render_pass::info_type{
-			{std::move(color_attachment)},
-			vector<info_proxy<SubpassDescription>>{std::move(color_attachment_subpass)},
-			vector<SubpassDependency>{std::move(dependency)}
-	}
+	render_pass_ = render_pass_type{render_pass_info_type{
+		{std::move(color_attachment)}, {std::move(color_attachment_subpass)}, {std::move(dependency)}}
 	};
 }
 
 void vulkan_sample::generate_framebuffer_create_infos()
 {
+	using frame_buffer_type = decltype(frame_buffers_)::value_type;
+	using frame_buffer_info_type = frame_buffer_type::info_type;
+
 	frame_buffers_.resize(image_views_.size());
-	std::generate(
+	std::transform(
+		image_views_.cbegin(),
+		image_views_.cend(),
 		frame_buffers_.begin(),
-		frame_buffers_.end(),
-		[this, it = std::move(image_views_.cbegin())]()mutable
-	{
-		return frame_buffer{
-			frame_buffer::info_type{
-				{**it++},
+		[this](const image_view& image_view)
+		{
+			return frame_buffer_type{frame_buffer_info_type{
+				{*image_view},
 				{
 					{},
 					*render_pass_,
 					0,
 					nullptr,
-					swap_chain_.info.info.imageExtent.width,
-					swap_chain_.info.info.imageExtent.height,
+					swap_chain_.info().info.imageExtent.width,
+					swap_chain_.info().info.imageExtent.height,
 					1
 				}
+			}
+			};
 		}
-		};
-	}
 	);
 }
 
 void vulkan_sample::generate_shader_module_create_infos()
 {
+	using shader_module_type = decltype(vertex_shader_module_);
+	using shader_module_info_type = shader_module_type::info_type;
+
 	CompileOptions options;
 	const auto vertex_shader_code_path = path("shaders") / path("shader.vert");
 	const auto fragment_shader_code_path = path("shaders") / path("shader.frag");
@@ -268,7 +280,7 @@ void vulkan_sample::generate_shader_module_create_infos()
 	if(!cfin) throw std::runtime_error("failed to load vertex code file\n");
 	csout << cfin.rdbuf();
 	{
-		const auto& [spriv_code, error_str, status] = glsl_compile_to_spriv(
+		auto&& [spriv_code, error_str, status] = glsl_compile_to_spriv(
 			csout.str(),
 			shaderc_vertex_shader,
 			"vertex",
@@ -276,7 +288,9 @@ void vulkan_sample::generate_shader_module_create_infos()
 		);
 		if(status != shaderc_compilation_status_success)
 			throw std::runtime_error("vertex code compile failure\n" + error_str);
-		vertex_shader_module_.info = info_t<ShaderModule>{std::move(spriv_code), {}};
+		vertex_shader_module_ = shader_module_type{
+			shader_module_info_type{std::move(spriv_code), {}}
+		};
 	}
 
 	cfin.close();
@@ -285,7 +299,7 @@ void vulkan_sample::generate_shader_module_create_infos()
 	csout.str("");
 	csout << cfin.rdbuf();
 	{
-		const auto& [spriv_code, error_str, status] = glsl_compile_to_spriv(
+		auto&& [spriv_code, error_str, status] = glsl_compile_to_spriv(
 			csout.str(),
 			shaderc_fragment_shader,
 			"fragment",
@@ -293,17 +307,63 @@ void vulkan_sample::generate_shader_module_create_infos()
 		);
 		if(status != shaderc_compilation_status_success)
 			throw std::runtime_error("fragment code compile failure\n" + error_str);
-		fragment_shader_module_.info = info_t<ShaderModule>{std::move(spriv_code)};
+		fragment_shader_module_ = shader_module_type{
+			shader_module_info_type{std::move(spriv_code)}
+		};
 	}
 	cfin.close();
 }
 
-//For now we don't need to do anything about the create present_info.
+void vulkan_sample::generate_descriptor_set_layout_create_info()
+{
+	using descriptor_set_layout_type = decltype(descriptor_set_layout_);
+	using descriptor_set_layout_info_type = descriptor_set_layout_type::info_type;
+
+	descriptor_set_layout_ = descriptor_set_layout_type{descriptor_set_layout_info_type{
+		{DescriptorSetLayoutBinding{0, DescriptorType::eUniformBuffer, 1, ShaderStageFlagBits::eVertex}}
+	}};
+}
+
+void vulkan_sample::generate_descriptor_pool_create_info()
+{
+	using descriptor_pool_type = decltype(descriptor_pool_);
+	using descriptor_pool_info_type = descriptor_pool_type::info_type;
+
+	descriptor_pool_ = descriptor_pool_type{descriptor_pool_info_type{{{
+			DescriptorType::eUniformBuffer,
+			static_cast<uint32_t>(image_views_.size())
+		}}, {DescriptorPoolCreateFlagBits::eFreeDescriptorSet}}};
+}
+
+void vulkan_sample::generate_descriptor_set_allocate_info()
+{
+	using descriptor_set_type = decltype(descriptor_sets_)::value_type;
+	using descriptor_set_info_type = descriptor_set_type::info_type;
+
+	descriptor_sets_.resize(image_views_.size());
+	for(auto& descriptor_set : descriptor_sets_)
+		descriptor_set = descriptor_set_type{descriptor_set_info_type{
+			{image_views_.size(), *descriptor_set_layout_},
+			descriptor_set_info_type::info_type{*descriptor_pool_}
+	}};
+}
+
 void vulkan_sample::generate_pipeline_layout_create_info()
-{}
+{
+	using pipeline_layout_type = decltype(pipeline_layout_);
+	using pipeline_layout_info_type = pipeline_layout_type::info_type;
+
+	pipeline_layout_ = pipeline_layout_type{pipeline_layout_info_type{{*descriptor_set_layout_}}};
+}
 
 void vulkan_sample::generate_graphics_pipeline_create_info()
 {
+	using graphics_pipeline_type = decltype(graphics_pipeline_);
+	using graphics_pipeline_info_type = graphics_pipeline_type::info_type;
+	GraphicsPipelineCreateInfo info;
+	info.renderPass = *render_pass_;
+	info.layout = *pipeline_layout_;
+
 	auto vertex_shader_stage = info_proxy<PipelineShaderStageCreateInfo>{
 		"main",
 		nullopt,
@@ -314,7 +374,6 @@ void vulkan_sample::generate_graphics_pipeline_create_info()
 		nullopt,
 		PipelineShaderStageCreateInfo{{}, ShaderStageFlagBits::eFragment, *fragment_shader_module_}
 	};
-	PipelineInputAssemblyStateCreateInfo input_assembly_state = {{}, PrimitiveTopology::eTriangleList};
 	auto input_state = info_proxy<PipelineVertexInputStateCreateInfo>{
 		{vertex::description},
 		{
@@ -322,18 +381,19 @@ void vulkan_sample::generate_graphics_pipeline_create_info()
 			vertex::attribute_descriptions.cend()
 		}
 	};
+	PipelineInputAssemblyStateCreateInfo input_assembly_state = {{}, PrimitiveTopology::eTriangleList};
 	auto viewport_state = info_proxy<PipelineViewportStateCreateInfo>{
 		{
 			{
 				0,
 				0,
-				static_cast<float>(swap_chain_.info.info.imageExtent.width),
-				static_cast<float>(swap_chain_.info.info.imageExtent.height),
+				static_cast<float>(swap_chain_.info().info.imageExtent.width),
+				static_cast<float>(swap_chain_.info().info.imageExtent.height),
 				0,
 				1
 			}
 		},
-		vector<Rect2D>{Rect2D{{0, 0}, swap_chain_.info.info.imageExtent}}
+		vector<Rect2D>{Rect2D{{0, 0}, swap_chain_.info().info.imageExtent}}
 	};
 	PipelineRasterizationStateCreateInfo rasterization_state = {
 		{},
@@ -371,80 +431,131 @@ void vulkan_sample::generate_graphics_pipeline_create_info()
 			std::array<float, 4>{0, 0, 0, 0}
 		}
 	};
+	PipelineMultisampleStateCreateInfo multi_sample_state;
 
-	graphics_pipeline_.info = info_t<GraphicsPipeline>{
+	graphics_pipeline_ = graphics_pipeline_type{graphics_pipeline_info_type{
 		{std::move(vertex_shader_stage), std::move(fragment_shader_stage)},
 		std::move(input_state),
 		std::move(input_assembly_state),
 		nullopt,
 		std::move(viewport_state),
 		std::move(rasterization_state),
-		PipelineMultisampleStateCreateInfo{},
+		std::move(multi_sample_state),
 		nullopt,
 		std::move(color_blend_state),
-	};
+		nullopt,
+		std::move(info)
+	}};
+}
 
-	graphics_pipeline_.info.info.renderPass = *render_pass_;
-	graphics_pipeline_.info.info.layout = *pipeline_layout_;
+void vulkan_sample::generate_transform_buffer_create_info()
+{
+	using uniform_buffer_type = decltype(transform_buffer_);
+	using uniform_buffer_info_type = uniform_buffer_type::info_type;
+
+	transform_buffer_ = uniform_buffer_type{
+		uniform_buffer_info_type{{}, {{}, sizeof(transform), BufferUsageFlagBits::eUniformBuffer}}
+	};
 }
 
 void vulkan_sample::generate_vertices_buffer_allocate_info()
 {
-	vertices_buffer_.info = {
+	using vertices_buffer_type = decltype(vertices_buffer_);
+	using vertices_buffer_info_type = vertices_buffer_type::info_type;
+
+	vertices_buffer_ = vertices_buffer_type{vertices_buffer_info_type{{}, {
 		{},
-		vertex::description.stride * vertices_.size(),
-	};
-	vertices_buffer_.info.usage |= BufferUsageFlagBits::eTransferDst;
+		vertex::description.stride * vertices.size(),
+		BufferUsageFlagBits::eVertexBuffer | BufferUsageFlagBits::eTransferDst
+	}}};
 }
 
 void vulkan_sample::generate_indices_buffer_allocate_info()
 {
-	indices_buffer_.info = {
+	using indices_buffer_type = decltype(indices_buffer_);
+	using indices_buffer_info_type = indices_buffer_type::info_type;
+
+	indices_buffer_ = indices_buffer_type{indices_buffer_info_type{{}, {
 		{},
-		sizeof indices_.front() * indices_.size(),
-	};
-	indices_buffer_.info.usage |= BufferUsageFlagBits::eTransferDst;
+		sizeof indices.front() * indices.size(),
+		BufferUsageFlagBits::eIndexBuffer | BufferUsageFlagBits::eTransferDst
+	}}};
 }
 
 void vulkan_sample::generate_vertices_staging_buffer_allocate_info()
 {
-	vertices_staging_buffer_.info = {
+	using vertices_staging_buffer_type = decltype(vertices_staging_buffer_);
+	using vertices_staging_buffer_info_type = vertices_staging_buffer_type::info_type;
+
+	vertices_staging_buffer_ = vertices_staging_buffer_type{vertices_staging_buffer_info_type{{}, {
 		{},
-		vertices_buffer_.info.size,
-	};
+		vertices_buffer_.info().info.size,
+		BufferUsageFlagBits::eTransferSrc | BufferUsageFlagBits::eTransferDst
+	}}};
 }
 
 void vulkan_sample::generate_indices_staging_buffer_allocate_info()
 {
-	indices_staging_buffer_.info = {
+	using indices_staging_buffer_type = decltype(indices_staging_buffer_);
+	using indices_staging_buffer_info_type = indices_staging_buffer_type::info_type;
+
+	indices_staging_buffer_ = indices_staging_buffer_type{indices_staging_buffer_info_type{{}, {
 		{},
-		indices_buffer_.info.size,
-	};
+		indices_buffer_.info().info.size,
+		BufferUsageFlagBits::eTransferSrc | BufferUsageFlagBits::eTransferDst
+	}}};
 }
 
 void vulkan_sample::generate_graphics_command_pool_create_info()
 {
-	graphics_command_pool_.info = {
-		CommandPoolCreateFlagBits::eResetCommandBuffer,
-		graphics_queue_index_
+	using command_pool_type = decltype(graphics_command_pool_);
+	using command_pool_info_type = command_pool_type::info_type;
+
+	graphics_command_pool_ = command_pool_type{
+		command_pool_info_type{CommandPoolCreateFlagBits::eResetCommandBuffer, graphics_queue_index_}
 	};
 }
 
 void vulkan_sample::generate_graphics_command_buffer_allocate_info()
 {
+	using command_buffer_type = decltype(graphics_command_buffers_)::value_type;
+	using command_buffer_info_type = command_buffer_type::info_type;
+
 	graphics_command_buffers_.resize(frame_buffers_.size());
 	for(auto& buffer : graphics_command_buffers_)
-		buffer = command_buffer{
-			{
+		buffer = command_buffer_type{{
 				*graphics_command_pool_,
 				CommandBufferLevel::ePrimary,
-				static_cast<decltype(buffer.info.commandBufferCount)>(frame_buffers_.size())
-			}
-	};
+				static_cast<decltype(buffer.info().commandBufferCount)>(frame_buffers_.size())
+			}};
+}
+
+void vulkan_sample::generate_sync_objects_create_info()
+{
+	using semaphore_type = decltype(swap_chain_image_syn_)::value_type;
+	using semaphore_info_type = semaphore_type::info_type;
+
+	using fence_type = decltype(gpu_syn_)::value_type;
+	using fence_info_type = fence_type::info_type;
+
+	swap_chain_image_syn_.resize(image_views_.size());
+	render_syn_.resize(image_views_.size());
+	gpu_syn_.resize(image_views_.size());
+
+	for(auto& syn : gpu_syn_)
+		syn = fence_type{fence_info_type{FenceCreateFlagBits::eSignaled}};
 }
 
 void vulkan_sample::generate_render_info()
 {
+	for(const auto& descriptor_set : descriptor_sets_)
+		device_->updateDescriptorSets({info_proxy<WriteDescriptorSet>{
+			{},
+			{{*transform_buffer_, 0, whole_size<decltype(DescriptorBufferInfo::range)>}},
+			{},
+			{*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
+	}}, {}, device_.dispatch());
+
 	command_buffer_begin_info_.info = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
 
 	render_pass_begin_infos_.resize(frame_buffers_.size());
@@ -460,7 +571,7 @@ void vulkan_sample::generate_render_info()
 			{
 				RenderPass{*render_pass_},
 				Framebuffer{*frame_buffers_[index]},
-				Rect2D{{0, 0}, {swap_chain_.info.info.imageExtent}}
+				Rect2D{{0, 0}, {swap_chain_.info().info.imageExtent}}
 			}
 		};
 
@@ -468,32 +579,45 @@ void vulkan_sample::generate_render_info()
 		buffer->copyBuffer(
 			*vertices_staging_buffer_,
 			*vertices_buffer_,
-			{BufferCopy{0, 0, vertices_staging_buffer_.info.size}},
+			{BufferCopy{0, 0, vertices_staging_buffer_.info().info.size}},
 			device_.dispatch()
 		);
 		buffer->copyBuffer(
 			*indices_staging_buffer_,
 			*indices_buffer_,
-			{BufferCopy{0, 0, indices_buffer_.info.size}},
+			{BufferCopy{0, 0, indices_buffer_.info().info.size}},
 			device_.dispatch()
 		);
 		buffer->beginRenderPass(render_pass_begin_infos_[index].info, SubpassContents::eInline, device_.dispatch());
 		buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
 		buffer->bindVertexBuffers(0, {*vertices_buffer_}, {0}, device_.dispatch());
-		buffer->bindIndexBuffer({*indices_buffer_}, {0}, index_type_v<decltype(indices_)::value_type>, device_.dispatch());
-		buffer->drawIndexed(static_cast<uint32_t>(indices_.size()), 1, 0, 0, 0, device_.dispatch());
+		buffer->bindIndexBuffer(
+			{*indices_buffer_},
+			{0},
+			index_type_v<decltype(indices)::value_type>,
+			device_.dispatch()
+		);
+		buffer->bindDescriptorSets(
+			PipelineBindPoint::eGraphics,
+			*pipeline_layout_,
+			0,
+			*descriptor_sets_[index],
+			{},
+			device_.dispatch()
+		);
+		buffer->drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0, device_.dispatch());
 		buffer->endRenderPass(device_.dispatch());
 		buffer->end(device_.dispatch());
 
 		submit_infos_[index] = info_proxy<SubmitInfo>{
-			vector<Semaphore>{*swap_chain_image_syn_},
+			vector<Semaphore>{},
 			PipelineStageFlagBits::eColorAttachmentOutput,
 			vector<CommandBuffer>{*buffer},
-			vector<Semaphore>{*render_syn_}
+			vector<Semaphore>{*render_syn_[index]}
 		};
 
 		present_infos_[index] = info_proxy<PresentInfoKHR>{
-			vector<Semaphore>{*render_syn_},
+			submit_infos_[index].signal_semaphores_property,
 			vector<SwapchainKHR>{*swap_chain_},
 			vector<uint32_t>{static_cast<uint32_t>(index)}
 		};
@@ -503,22 +627,18 @@ void vulkan_sample::generate_render_info()
 	);
 }
 
-void vulkan_sample::generate_fence_create_info()
-{
-	gpu_syn_.info.flags = FenceCreateFlagBits::eSignaled;
-}
-
 VkBool32 vulkan_sample::debug_callback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT flag_bits,
-	VkDebugUtilsMessageTypeFlagsEXT  type_flags,
+	const VkDebugUtilsMessageSeverityFlagBitsEXT flag_bits,
+	const VkDebugUtilsMessageTypeFlagsEXT type_flags,
 	const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
-	void*
-)
+	void*)
 {
-	std::cerr << to_string(DebugUtilsMessageSeverityFlagBitsEXT{flag_bits}) << '\n' <<
+	const auto flag = DebugUtilsMessageSeverityFlagBitsEXT{flag_bits};
+	std::cerr << to_string(flag) << '\n' <<
 		to_string(DebugUtilsMessageTypeFlagsEXT{type_flags}) << '\n' <<
 		"validation layer: " << p_callback_data->pMessage << '\n';
-	return VK_FALSE;
+
+	return flag == DebugUtilsMessageSeverityFlagBitsEXT::eError ? true : false;
 }
 
 void vulkan_sample::initialize_vulkan()
@@ -559,6 +679,15 @@ void vulkan_sample::initialize_vulkan()
 	initialize_shader_module(device_, vertex_shader_module_);
 	initialize_shader_module(device_, fragment_shader_module_);
 
+	generate_descriptor_set_layout_create_info();
+	initialize_descriptor_set_layout(device_, descriptor_set_layout_);
+
+	generate_descriptor_pool_create_info();
+	initialize_descriptor_pool(device_, descriptor_pool_);
+
+	generate_descriptor_set_allocate_info();
+	initialize_descriptor_sets(device_, descriptor_sets_);
+
 	generate_pipeline_layout_create_info();
 	initialize_pipeline_layout(device_, pipeline_layout_);
 
@@ -569,6 +698,15 @@ void vulkan_sample::initialize_vulkan()
 		initialize_graphics_pipelines(device_, graphics_pipelines_);
 		graphics_pipeline_ = std::move(graphics_pipelines_.front());
 	}
+
+	generate_transform_buffer_create_info();
+	initialize_buffer(device_, transform_buffer_);
+	transform_buffer_memory_ = allocate_buffer_memory<decltype(transform_buffer_memory_)::info_type>(
+		device_,
+		transform_buffer_,
+		physical_device_,
+		MemoryPropertyFlagBits::eHostVisible
+		);
 
 	generate_vertices_buffer_allocate_info();
 	initialize_buffer(device_, vertices_buffer_);
@@ -596,6 +734,7 @@ void vulkan_sample::initialize_vulkan()
 		physical_device_,
 		MemoryPropertyFlagBits::eHostVisible
 		);
+	flush_vertices_to_memory();
 
 	generate_indices_staging_buffer_allocate_info();
 	initialize_buffer(device_, indices_staging_buffer_);
@@ -605,6 +744,7 @@ void vulkan_sample::initialize_vulkan()
 		physical_device_,
 		MemoryPropertyFlagBits::eHostVisible
 		);
+	flush_indices_to_memory();
 
 	generate_graphics_command_pool_create_info();
 	initialize_command_pool(device_, graphics_command_pool_);
@@ -612,18 +752,21 @@ void vulkan_sample::initialize_vulkan()
 	generate_graphics_command_buffer_allocate_info();
 	initialize_command_buffers(device_, graphics_command_buffers_);
 
-	initialize_semaphore(device_, swap_chain_image_syn_);
-
-	initialize_semaphore(device_, render_syn_);
-
-	generate_fence_create_info();
-	initialize_fence(device_, gpu_syn_);
+	generate_sync_objects_create_info();
+	for(auto& semaphore : swap_chain_image_syn_)
+		initialize_semaphore(device_, semaphore);
+	for(auto& semaphore : render_syn_)
+		initialize_semaphore(device_, semaphore);
+	for(auto& fence : gpu_syn_)
+		initialize_fence(device_, fence);
 
 	generate_render_info();
 }
 
 void vulkan_sample::re_initialize_vulkan()
 {
+	const auto old_extent = swap_chain_.info().info.imageExtent;
+	const auto old_image_view_size = image_views_.size();
 	{
 		int width = 0, height = 0;
 		while((width | height) == 0)
@@ -634,8 +777,6 @@ void vulkan_sample::re_initialize_vulkan()
 	}
 
 	device_->waitIdle();
-
-	objects_reset(graphics_command_buffers_, device_);
 
 	graphics_pipeline_ = nullptr;
 
@@ -658,26 +799,32 @@ void vulkan_sample::re_initialize_vulkan()
 	for(auto& view : image_views_)
 		initialize_image_view(device_, view);
 
-	generate_render_pass_create_info();
-	initialize_render_pass(device_, render_pass_);
-
 	generate_framebuffer_create_infos();
 	for(auto& fb : frame_buffers_)
 		initialize_framebuffer(device_, fb);
 
-	generate_pipeline_layout_create_info();
-	initialize_pipeline_layout(device_, pipeline_layout_);
-
-	generate_graphics_pipeline_create_info();
+	if(swap_chain_.info().info.imageExtent != old_extent)
 	{
+		generate_graphics_pipeline_create_info();
 		vector<decltype(graphics_pipeline_)> graphics_pipelines_(1);
 		graphics_pipelines_.front() = std::move(graphics_pipeline_);
 		initialize_graphics_pipelines(device_, graphics_pipelines_);
 		graphics_pipeline_ = std::move(graphics_pipelines_.front());
 	}
+	if(image_views_.size() != old_image_view_size)
+	{
+		pool_objects_reset(descriptor_sets_, device_);
+		generate_descriptor_pool_create_info();
+		initialize_descriptor_pool(device_, descriptor_pool_);
 
-	generate_graphics_command_buffer_allocate_info();
-	initialize_command_buffers(device_, graphics_command_buffers_);
+		generate_descriptor_set_allocate_info();
+		initialize_descriptor_sets(device_, descriptor_sets_);
+
+		pool_objects_reset(graphics_command_buffers_, device_);
+		generate_graphics_command_buffer_allocate_info();
+
+		initialize_command_buffers(device_, graphics_command_buffers_);
+	}
 
 	generate_render_info();
 }
@@ -694,8 +841,48 @@ vulkan_sample::~vulkan_sample()
 	glfw_cleanup();
 }
 
+const SwapchainCreateInfoKHR& vulkan_sample::swap_chain_create_info() const { return swap_chain_.info(); }
+
 void vulkan_sample::initialize()
 {
 	initialize_window();
 	initialize_vulkan();
+}
+
+bool vulkan_sample::render()
+{
+	static constexpr empty_type empty_type;
+	return render(empty_type);
+}
+
+void vulkan_sample::flush_vertices_to_memory()
+{
+	write(vertices_staging_buffer_memory_, device_, vertices.cbegin(), vertices.cend());
+	device_->flushMappedMemoryRanges(
+		{{*vertices_staging_buffer_memory_, 0, whole_size<DeviceSize>}},
+		device_.dispatch());
+}
+
+void vulkan_sample::flush_indices_to_memory()
+{
+	write(indices_staging_buffer_memory_, device_, indices.cbegin(), indices.cend());
+	device_->flushMappedMemoryRanges({{*indices_staging_buffer_memory_, 0, whole_size<DeviceSize>}}, device_.dispatch());
+}
+
+void vulkan_sample::flush_transform_to_memory()
+{
+	write(transform_buffer_memory_, device_, transform);
+	device_->flushMappedMemoryRanges(
+		{{*transform_buffer_memory_, 0, whole_size<DeviceSize>}},
+		device_.dispatch()
+	);
+}
+
+void vulkan_sample::flush_to_memory()
+{
+	device_->flushMappedMemoryRanges({
+		MappedMemoryRange{*vertices_staging_buffer_memory_, 0, whole_size<DeviceSize>},
+		MappedMemoryRange{*indices_staging_buffer_memory_, 0, whole_size<DeviceSize>},
+		MappedMemoryRange{*transform_buffer_memory_, 0, whole_size<DeviceSize>}
+		}, device_.dispatch());
 }

@@ -31,7 +31,7 @@ namespace vulkan
 
 	const VertexInputBindingDescription vertex::description = {0, sizeof(vertex), VertexInputRate::eVertex};
 	const array<VertexInputAttributeDescription, 2> vertex::attribute_descriptions = {
-		VertexInputAttributeDescription{0, 0, format_v<glm::vec2>, MEMBER_OFFSET(vertex, pos)},
-		VertexInputAttributeDescription{1, 0, format_v<glm::vec3>, MEMBER_OFFSET(vertex, color)}
+		VertexInputAttributeDescription{0, 0, format_v<vec2>, static_cast<uint32_t>(MEMBER_OFFSET(vertex, pos))},
+		VertexInputAttributeDescription{1, 0, format_v<vec3>, static_cast<uint32_t>(MEMBER_OFFSET(vertex, color))}
 	};
 }
