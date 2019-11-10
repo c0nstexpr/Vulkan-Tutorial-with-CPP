@@ -1,6 +1,6 @@
-#include"vulkan_info.h"
+#include"info.h"
 
-namespace vulkan
+namespace vulkan::utility
 {
 	void info_proxy<ApplicationInfo>::property_copy(const base& right) const
 	{
@@ -26,7 +26,7 @@ namespace vulkan
 		engine_name_property = std::move(engine_name);
 	}
 
-	info_proxy<ApplicationInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<ApplicationInfo>::info_proxy(base_info_type info) : info_proxy(
 		info.pApplicationName != nullptr ?
 		decltype(application_name_){info.pApplicationName} :
 		decltype(application_name_){},
@@ -87,7 +87,7 @@ namespace vulkan
 		layer_name_strs_property = std::move(layer_names_strs);
 	}
 
-	info_proxy<InstanceCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<InstanceCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pApplicationInfo != nullptr ? std::make_optional(*info.pApplicationInfo) : nullopt},
 		{info.ppEnabledExtensionNames, info.ppEnabledExtensionNames + info.enabledExtensionCount},
 		{info.ppEnabledLayerNames, info.ppEnabledLayerNames + info.enabledLayerCount},
@@ -164,7 +164,7 @@ namespace vulkan
 		priorities_property = std::move(priorities);
 	}
 
-	info_proxy<DeviceQueueCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<DeviceQueueCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pQueuePriorities, info.pQueuePriorities + info.queueCount},
 		std::move(info)
 	)
@@ -210,7 +210,7 @@ namespace vulkan
 		features_property = std::move(features);
 	}
 
-	info_proxy<DeviceCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<DeviceCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pQueueCreateInfos, info.pQueueCreateInfos + info.queueCreateInfoCount},
 		{info.ppEnabledExtensionNames, info.ppEnabledExtensionNames + info.enabledExtensionCount},
 		{info.pEnabledFeatures != nullptr ? std::make_optional(*info.pEnabledFeatures) : nullopt},
@@ -276,7 +276,7 @@ namespace vulkan
 		queue_family_indices_set_property = std::move(queue_family_indices_set);
 	}
 
-	info_proxy<SwapchainCreateInfoKHR>::info_proxy(info_type info) : info_proxy(
+	info_proxy<SwapchainCreateInfoKHR>::info_proxy(base_info_type info) : info_proxy(
 		{info.pQueueFamilyIndices, info.pQueueFamilyIndices + info.queueFamilyIndexCount},
 		std::move(info)
 	)
@@ -333,7 +333,7 @@ namespace vulkan
 		preserve_attachments_property = std::move(preserve_attachments);
 	}
 
-	info_proxy<SubpassDescription>::info_proxy(info_type info) :
+	info_proxy<SubpassDescription>::info_proxy(base_info_type info) :
 		info_proxy(
 			{info.pInputAttachments, info.pInputAttachments + info.inputAttachmentCount},
 			{info.pColorAttachments, info.pColorAttachments + info.colorAttachmentCount},
@@ -431,7 +431,7 @@ namespace vulkan
 		dependencies_property = std::move(dependencies);
 	}
 
-	info_proxy<RenderPassCreateInfo>::info_proxy(info_type info) :
+	info_proxy<RenderPassCreateInfo>::info_proxy(base_info_type info) :
 		info_proxy(
 			{info.pAttachments, info.pAttachments + info.attachmentCount},
 			{info.pSubpasses, info.pSubpasses + info.subpassCount},
@@ -505,7 +505,7 @@ namespace vulkan
 		image_views_property = std::move(views);
 	}
 
-	info_proxy<FramebufferCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<FramebufferCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pAttachments, info.pAttachments + info.attachmentCount},
 		std::move(info)
 	)
@@ -541,7 +541,7 @@ namespace vulkan
 		codes_property = std::move(codes);
 	}
 
-	info_proxy<ShaderModuleCreateInfo>::info_proxy(info_type info) :info_proxy(
+	info_proxy<ShaderModuleCreateInfo>::info_proxy(base_info_type info) :info_proxy(
 		{info.pCode, info.pCode + info.codeSize / sizeof(decltype(codes_)::value_type)},
 		std::move(info)
 	)
@@ -554,6 +554,47 @@ namespace vulkan
 		codes_ = std::move(value);
 		info.pCode = codes_.size() != 0 ? codes_.data() : nullptr;
 		info.codeSize = codes_.size() * sizeof(decltype(codes_)::value_type);
+	}
+
+	void info_proxy<ImageCreateInfo>::property_copy(const base& right) const
+	{
+		decltype(auto) d_right = static_cast<const info_proxy&>(right);
+		queue_family_indices_set_property = d_right.queue_family_indices_set_property;
+	}
+
+	void info_proxy<ImageCreateInfo>::property_move(base&& right) const noexcept
+	{
+		decltype(auto) d_right = static_cast<info_proxy&&>(right);
+		queue_family_indices_set_property = std::move(d_right.queue_family_indices_set_);
+	}
+
+	info_proxy<ImageCreateInfo>::info_proxy(
+		decltype(queue_family_indices_set_) queue_family_indices_set,
+		decltype(info) i
+	) : base(std::move(i))
+	{
+		queue_family_indices_set_property = std::move(queue_family_indices_set);
+	}
+
+	info_proxy<ImageCreateInfo>::info_proxy(base_info_type info) : info_proxy(
+		{info.pQueueFamilyIndices, info.pQueueFamilyIndices + info.queueFamilyIndexCount},
+		std::move(info)
+	)
+	{}
+
+	auto info_proxy<ImageCreateInfo>::get_queue_family_indices_set() const ->
+		const decltype(queue_family_indices_set_)& { return queue_family_indices_set_; }
+
+	void info_proxy<ImageCreateInfo>::set_queue_family_indices_set(
+		decltype(queue_family_indices_set_) value
+	)
+	{
+		queue_family_indices_set_ = std::move(value);
+		queue_family_indices_ = {queue_family_indices_set_.cbegin(), queue_family_indices_set_.cend()};
+
+		info.pQueueFamilyIndices = info.sharingMode == SharingMode::eConcurrent &&
+			queue_family_indices_.size() != 0 ? queue_family_indices_.data() : nullptr;
+		info.queueFamilyIndexCount = static_cast<uint32_t>(queue_family_indices_.size());
 	}
 
 	void info_proxy<SpecializationInfo>::property_copy(const base& right) const
@@ -576,7 +617,7 @@ namespace vulkan
 		map_entries_property = std::move(map_entries);
 	}
 
-	info_proxy<SpecializationInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<SpecializationInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pMapEntries, info.pMapEntries + info.mapEntryCount},
 		std::move(info)
 	)
@@ -618,7 +659,7 @@ namespace vulkan
 		specialization_info_property = std::move(specialization_info);
 	}
 
-	info_proxy<PipelineShaderStageCreateInfo>::info_proxy(info_type info) :
+	info_proxy<PipelineShaderStageCreateInfo>::info_proxy(base_info_type info) :
 		info_proxy(
 			info.pName,
 			{info.pSpecializationInfo != nullptr ? std::make_optional(*info.pSpecializationInfo) : nullopt},
@@ -672,7 +713,7 @@ namespace vulkan
 		vertex_input_attribute_descriptions_property = std::move(vertex_input_attribute_descriptions);
 	}
 
-	info_proxy<PipelineVertexInputStateCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<PipelineVertexInputStateCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{
 			info.pVertexBindingDescriptions,
 			info.pVertexBindingDescriptions + info.vertexBindingDescriptionCount
@@ -738,7 +779,7 @@ namespace vulkan
 		scissors_property = std::move(scissors);
 	}
 
-	info_proxy<PipelineViewportStateCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<PipelineViewportStateCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pViewports, info.pViewports + info.viewportCount},
 		{info.pScissors, info.pScissors + info.scissorCount},
 		std::move(info)
@@ -789,7 +830,7 @@ namespace vulkan
 		attachment_states_property = std::move(attachment_states);
 	}
 
-	info_proxy<PipelineColorBlendStateCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<PipelineColorBlendStateCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pAttachments, info.pAttachments + info.attachmentCount},
 		std::move(info)
 	)
@@ -831,7 +872,7 @@ namespace vulkan
 		push_const_ranges_property = std::move(push_const_ranges);
 	}
 
-	info_proxy<PipelineLayoutCreateInfo>::info_proxy(info_type info) :info_proxy(
+	info_proxy<PipelineLayoutCreateInfo>::info_proxy(base_info_type info) :info_proxy(
 		{info.pSetLayouts, info.pSetLayouts + info.setLayoutCount},
 		{info.pPushConstantRanges, info.pPushConstantRanges + info.pushConstantRangeCount},
 		std::move(info)
@@ -862,7 +903,7 @@ namespace vulkan
 		info.pushConstantRangeCount = static_cast<uint32_t>(push_const_ranges_.size());
 	}
 
-	void info_proxy<GraphicsPipelineCreateInfo>::property_copy(const base& right) const
+	void info_proxy<graphics_pipeline_create_info>::property_copy(const base& right) const
 	{
 		decltype(auto) d_right = static_cast<const info_proxy&>(right);
 		stages_info_proxies_property = d_right.stages_info_proxies_property;
@@ -877,7 +918,7 @@ namespace vulkan
 		dynamic_state_property = d_right.dynamic_state_property;
 	}
 
-	void info_proxy<GraphicsPipelineCreateInfo>::property_move(base&& right) const noexcept
+	void info_proxy<graphics_pipeline_create_info>::property_move(base&& right) const noexcept
 	{
 		decltype(auto) d_right = static_cast<info_proxy&&>(right);
 		stages_info_proxies_property = std::move(d_right.stages_info_proxies_);
@@ -892,7 +933,7 @@ namespace vulkan
 		dynamic_state_property = std::move(d_right.dynamic_state_);
 	}
 
-	info_proxy<GraphicsPipelineCreateInfo>::info_proxy(
+	info_proxy<graphics_pipeline_create_info>::info_proxy(
 		decltype(stages_info_proxies_) stages_info_proxies,
 		decltype(vertex_input_state_) vertex_input_state,
 		decltype(input_assembly_state_) input_assembly_state,
@@ -918,7 +959,7 @@ namespace vulkan
 		dynamic_state_property = std::move(dynamic_state);
 	}
 
-	info_proxy<GraphicsPipelineCreateInfo>::info_proxy(info_type info) :info_proxy(
+	info_proxy<graphics_pipeline_create_info>::info_proxy(base_info_type info) :info_proxy(
 		{info.pStages, info.pStages + info.stageCount},
 		{info.pVertexInputState != nullptr ? std::make_optional(*info.pVertexInputState) : nullopt},
 		{info.pInputAssemblyState != nullptr ? std::make_optional(*info.pInputAssemblyState) : nullopt},
@@ -933,10 +974,10 @@ namespace vulkan
 	)
 	{}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_stages_info_proxies() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_stages_info_proxies() const ->
 		const decltype(stages_info_proxies_)& { return stages_info_proxies_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_stages_info_proxies(
+	void info_proxy<graphics_pipeline_create_info>::set_stages_info_proxies(
 		decltype(stages_info_proxies_) value
 	)
 	{
@@ -952,10 +993,10 @@ namespace vulkan
 		info.stageCount = static_cast<uint32_t>(stages_.size());
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_vertex_input_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_vertex_input_state() const ->
 		const decltype(vertex_input_state_)& { return vertex_input_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_vertex_input_state(
+	void info_proxy<graphics_pipeline_create_info>::set_vertex_input_state(
 		decltype(vertex_input_state_) value
 	)
 	{
@@ -963,10 +1004,10 @@ namespace vulkan
 		info.pVertexInputState = vertex_input_state_ ? &vertex_input_state_->info : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_input_assembly_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_input_assembly_state() const ->
 		const decltype(input_assembly_state_)& { return input_assembly_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_input_assembly_state(
+	void info_proxy<graphics_pipeline_create_info>::set_input_assembly_state(
 		decltype(input_assembly_state_) value
 	)
 	{
@@ -974,10 +1015,10 @@ namespace vulkan
 		info.pInputAssemblyState = input_assembly_state_ ? &*input_assembly_state_ : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_tessellation_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_tessellation_state() const ->
 		const decltype(tessellation_state_)& { return tessellation_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_tessellation_state(
+	void info_proxy<graphics_pipeline_create_info>::set_tessellation_state(
 		decltype(tessellation_state_) value
 	)
 	{
@@ -985,21 +1026,21 @@ namespace vulkan
 		info.pTessellationState = tessellation_state_ ? &*tessellation_state_ : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_viewport_state() const -> const decltype(viewport_state_)&
+	auto info_proxy<graphics_pipeline_create_info>::get_viewport_state() const -> const decltype(viewport_state_)&
 	{
 		return viewport_state_;
 	}
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_viewport_state(decltype(viewport_state_) value)
+	void info_proxy<graphics_pipeline_create_info>::set_viewport_state(decltype(viewport_state_) value)
 	{
 		viewport_state_ = std::move(value);
 		info.pViewportState = viewport_state_ ? &viewport_state_->info : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_rasterization_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_rasterization_state() const ->
 		const decltype(rasterization_state_)& { return rasterization_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_rasterization_state(
+	void info_proxy<graphics_pipeline_create_info>::set_rasterization_state(
 		decltype(rasterization_state_) value
 	)
 	{
@@ -1007,19 +1048,19 @@ namespace vulkan
 		info.pRasterizationState = rasterization_state_ ? &*rasterization_state_ : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_multi_sample_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_multi_sample_state() const ->
 		const decltype(multi_sample_state_)& { return multi_sample_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_multi_sample_state(decltype(multi_sample_state_) value)
+	void info_proxy<graphics_pipeline_create_info>::set_multi_sample_state(decltype(multi_sample_state_) value)
 	{
 		multi_sample_state_ = std::move(value);
 		info.pMultisampleState = multi_sample_state_ ? &*multi_sample_state_ : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_depth_stencil_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_depth_stencil_state() const ->
 		const decltype(depth_stencil_state_)& { return depth_stencil_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_depth_stencil_state(
+	void info_proxy<graphics_pipeline_create_info>::set_depth_stencil_state(
 		decltype(depth_stencil_state_) value
 	)
 	{
@@ -1027,21 +1068,21 @@ namespace vulkan
 		info.pDepthStencilState = depth_stencil_state_ ? &*depth_stencil_state_ : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_color_blend_state() const ->
+	auto info_proxy<graphics_pipeline_create_info>::get_color_blend_state() const ->
 		const decltype(color_blend_state_)& { return color_blend_state_; }
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_color_blend_state(decltype(color_blend_state_) value)
+	void info_proxy<graphics_pipeline_create_info>::set_color_blend_state(decltype(color_blend_state_) value)
 	{
 		color_blend_state_ = std::move(value);
 		info.pColorBlendState = color_blend_state_ ? &color_blend_state_->info : nullptr;
 	}
 
-	auto info_proxy<GraphicsPipelineCreateInfo>::get_dynamic_state() const -> const decltype(dynamic_state_)&
+	auto info_proxy<graphics_pipeline_create_info>::get_dynamic_state() const -> const decltype(dynamic_state_)&
 	{
 		return dynamic_state_;
 	}
 
-	void info_proxy<GraphicsPipelineCreateInfo>::set_dynamic_state(decltype(dynamic_state_) value)
+	void info_proxy<graphics_pipeline_create_info>::set_dynamic_state(decltype(dynamic_state_) value)
 	{
 		dynamic_state_ = std::move(value);
 		info.pDynamicState = dynamic_state_ ? &*dynamic_state_ : nullptr;
@@ -1067,7 +1108,7 @@ namespace vulkan
 		inheritance_info_property = std::move(inheritance_info);
 	}
 
-	info_proxy<CommandBufferBeginInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<CommandBufferBeginInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pInheritanceInfo != nullptr ? std::make_optional(*info.pInheritanceInfo) : nullopt},
 		std::move(info)
 	)
@@ -1104,7 +1145,7 @@ namespace vulkan
 		clear_values_property = std::move(clear_values);
 	}
 
-	info_proxy<RenderPassBeginInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<RenderPassBeginInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pClearValues, info.pClearValues + info.clearValueCount},
 		std::move(info)
 	)
@@ -1140,7 +1181,7 @@ namespace vulkan
 		samplers_property = std::move(samplers);
 	}
 
-	info_proxy<DescriptorSetLayoutBinding>::info_proxy(info_type info) :info_proxy(
+	info_proxy<DescriptorSetLayoutBinding>::info_proxy(base_info_type info) :info_proxy(
 		info.pImmutableSamplers != nullptr ?
 		decltype(samplers_){info.pImmutableSamplers, info.pImmutableSamplers + info.descriptorCount} :
 		decltype(samplers_){0},
@@ -1181,7 +1222,7 @@ namespace vulkan
 		bindings_proxies_property = std::move(bindings_proxies);
 	}
 
-	info_proxy<DescriptorSetLayoutCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<DescriptorSetLayoutCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pBindings, info.pBindings + info.bindingCount},
 		std::move(info)
 	)
@@ -1224,7 +1265,7 @@ namespace vulkan
 		pool_sizes_property = std::move(pool_sizes);
 	}
 
-	info_proxy<DescriptorPoolCreateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<DescriptorPoolCreateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pPoolSizes, info.pPoolSizes + info.poolSizeCount},
 		std::move(info)
 	)
@@ -1265,7 +1306,7 @@ namespace vulkan
 		descriptor_set_layouts_property = std::move(descriptor_set_layouts);
 	}
 
-	info_proxy<DescriptorSetAllocateInfo>::info_proxy(info_type info) : info_proxy(
+	info_proxy<DescriptorSetAllocateInfo>::info_proxy(base_info_type info) : info_proxy(
 		{info.pSetLayouts, info.pSetLayouts + info.descriptorSetCount},
 		std::move(info)
 	)
@@ -1311,7 +1352,7 @@ namespace vulkan
 		texel_buffer_views_property = std::move(texel_buffer_views);
 	}
 
-	info_proxy<WriteDescriptorSet>::info_proxy(info_type info) :info_proxy(
+	info_proxy<WriteDescriptorSet>::info_proxy(base_info_type info) :info_proxy(
 		{info.pImageInfo, info.pImageInfo},
 		{info.pBufferInfo, info.pBufferInfo},
 		{info.pTexelBufferView, info.pTexelBufferView},
@@ -1384,7 +1425,7 @@ namespace vulkan
 		signal_semaphores_property = std::move(signal_semaphores);
 	}
 
-	info_proxy<SubmitInfo>::info_proxy(info_type info) :info_proxy(
+	info_proxy<SubmitInfo>::info_proxy(base_info_type info) :info_proxy(
 		{info.pWaitSemaphores, info.pWaitSemaphores + info.waitSemaphoreCount},
 		{info.pWaitDstStageMask != nullptr ? std::make_optional(*info.pWaitDstStageMask) : nullopt},
 		{info.pCommandBuffers, info.pCommandBuffers + info.commandBufferCount},
@@ -1469,7 +1510,7 @@ namespace vulkan
 		results_property = std::move(results);
 	}
 
-	info_proxy<PresentInfoKHR>::info_proxy(info_type info) :info_proxy(
+	info_proxy<PresentInfoKHR>::info_proxy(base_info_type info) :info_proxy(
 		{info.pWaitSemaphores, info.pWaitSemaphores + info.waitSemaphoreCount},
 		{info.pSwapchains, info.pSwapchains + info.swapchainCount},
 		{info.pImageIndices, info.pImageIndices + info.swapchainCount},
@@ -1521,34 +1562,34 @@ namespace vulkan
 		info.pResults = results_.size() != 0 ? results_.data() : nullptr;
 	}
 
-	void info_proxy<BufferCreateInfo>::property_copy(const base& right) const
+	void info_proxy<vk::BufferCreateInfo>::property_copy(const base& right) const
 	{
 		decltype(auto) d_right = static_cast<const info_proxy&>(right);
 		queue_family_indices_set_property = d_right.queue_family_indices_set_property;
 	}
 
-	void info_proxy<BufferCreateInfo>::property_move(base&& right) const noexcept
+	void info_proxy<vk::BufferCreateInfo>::property_move(base&& right) const noexcept
 	{
 		decltype(auto) d_right = static_cast<info_proxy&&>(right);
 		queue_family_indices_set_property = std::move(d_right.queue_family_indices_set_);
 	}
 
-	info_proxy<BufferCreateInfo>::info_proxy(decltype(queue_family_indices_set_) q_indices, decltype(info) info) :
+	info_proxy<vk::BufferCreateInfo>::info_proxy(decltype(queue_family_indices_set_) q_indices, decltype(info) info) :
 		base(std::move(info))
 	{
 		queue_family_indices_set_property = std::move(q_indices);
 	}
 
-	info_proxy<BufferCreateInfo>::info_proxy(info_type info) :info_proxy(
+	info_proxy<vk::BufferCreateInfo>::info_proxy(base_info_type info) :info_proxy(
 		{info.pQueueFamilyIndices, info.pQueueFamilyIndices + info.queueFamilyIndexCount},
 		std::move(info)
 	)
 	{}
 
-	auto info_proxy<BufferCreateInfo>::get_queue_family_indices_set() const ->
+	auto info_proxy<vk::BufferCreateInfo>::get_queue_family_indices_set() const ->
 		const decltype(queue_family_indices_set_)& { return queue_family_indices_set_; }
 
-	void info_proxy<BufferCreateInfo>::set_queue_family_indices_set(decltype(queue_family_indices_set_) value)
+	void info_proxy<vk::BufferCreateInfo>::set_queue_family_indices_set(decltype(queue_family_indices_set_) value)
 	{
 		queue_family_indices_set_ = std::move(value);
 		queue_family_indices_ = {queue_family_indices_set_.cbegin(), queue_family_indices_set_.cend()};

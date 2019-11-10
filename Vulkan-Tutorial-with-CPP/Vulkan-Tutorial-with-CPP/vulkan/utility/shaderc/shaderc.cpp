@@ -1,6 +1,6 @@
-﻿#include"vulkan_utility.h"
+#include "shaderc.h"
 
-namespace vulkan
+namespace vulkan::utility::shaderc
 {
 	namespace
 	{
@@ -28,10 +28,4 @@ namespace vulkan
 		const auto& res = compiler.CompileGlslToSpv(glsl_code, kind, file_name, options);
 		return {{res.cbegin(), res.cend()}, res.GetErrorMessage(), res.GetCompilationStatus()};
 	}
-
-	const VertexInputBindingDescription vertex::description = {0, sizeof(vertex), VertexInputRate::eVertex};
-	const array<VertexInputAttributeDescription, 2> vertex::attribute_descriptions = {
-		VertexInputAttributeDescription{0, 0, format_v<vec2>, static_cast<uint32_t>(MEMBER_OFFSET(vertex, pos))},
-		VertexInputAttributeDescription{1, 0, format_v<vec3>, static_cast<uint32_t>(MEMBER_OFFSET(vertex, color))}
-	};
 }

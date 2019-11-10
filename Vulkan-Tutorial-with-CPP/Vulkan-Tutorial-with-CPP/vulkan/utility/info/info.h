@@ -1,20 +1,31 @@
 ﻿#pragma once
 
-#include"utility.h"
+#include "vulkan/utility/utility_core.h"
 
-namespace vulkan
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+namespace vulkan::utility
 {
 	using namespace vk;
+	using namespace ::utility::type_traits;
+	using std::string;
+	using std::vector;
+	using std::set;
+	using std::optional;
+	using ::utility::property;
+	using std::nullopt;
 
 	// ReSharper disable CppInconsistentNaming
-	struct GraphicsPipeline
+	struct GraphicsPipeline : Pipeline
 	{
-		using handle_type = Pipeline;
+		using base = Pipeline;
+		using base::base;
 	};
 
-	struct ComputePipeline
+	struct ComputePipeline : Pipeline
 	{
-		using handle_type = Pipeline;
+		using base = Pipeline;
 	};
 
 	// ReSharper restore CppInconsistentNaming
@@ -26,56 +37,71 @@ namespace vulkan
 	struct info<DebugUtilsMessengerEXT>
 	{
 		using handle_type = DebugUtilsMessengerEXT;
-		using type = DebugUtilsMessengerCreateInfoEXT;
+		using base_info_type = DebugUtilsMessengerCreateInfoEXT;
+		using type = base_info_type;
+	};
+
+	struct surface_khr_create_info
+	{
+		using glfw_window_pointer = GLFWwindow*;
+
+		glfw_window_pointer window;
 	};
 
 	template<>
 	struct info<SurfaceKHR>
 	{
 		using handle_type = SurfaceKHR;
-		using type = empty_type;
+		using base_info_type = surface_khr_create_info;
+		using type = base_info_type;
 	};
 
 	template<>
 	struct info<DeviceMemory>
 	{
 		using handle_type = DeviceMemory;
-		using type = MemoryAllocateInfo;
+		using base_info_type = MemoryAllocateInfo;
+		using type = base_info_type;
 	};
 
 	template<>
 	struct info<ImageView>
 	{
 		using handle_type = ImageView;
-		using type = ImageViewCreateInfo;
+		using base_info_type = ImageViewCreateInfo;
+		using type = base_info_type;
 	};
 
 	template<>
 	struct info<CommandPool>
 	{
 		using handle_type = CommandPool;
-		using type = CommandPoolCreateInfo;
+		using base_info_type = CommandPoolCreateInfo;
+		using type = base_info_type;
 	};
 
 	template<>
 	struct info<CommandBuffer>
 	{
 		using handle_type = CommandBuffer;
-		using type = CommandBufferAllocateInfo;
+		using base_info_type = CommandBufferAllocateInfo;
+		using type = base_info_type;
 	};
 
 	template<>
 	struct info<Semaphore>
 	{
 		using handle_type = Semaphore;
-		using type = SemaphoreCreateInfo;
+		using base_info_type = SemaphoreCreateInfo;
+		using type = base_info_type;
 	};
 
 	template<>
 	struct info<Fence>
 	{
 		using handle_type = Fence;
-		using type = FenceCreateInfo;
+		using base_info_type = FenceCreateInfo;
+		using type = base_info_type;
 	};
 
 	template<typename T>
@@ -84,7 +110,7 @@ namespace vulkan
 	template<typename T>
 	struct info_proxy_base
 	{
-		using info_type = T;
+		using base_info_type = T;
 
 	protected:
 		virtual void property_copy(const info_proxy_base&) const = 0;
@@ -93,7 +119,7 @@ namespace vulkan
 	public:
 		T info;
 
-		info_proxy_base(info_type i = info_type{}) : info(std::move(i)) {}
+		info_proxy_base(base_info_type i = base_info_type{}) : info(std::move(i)) {}
 
 #define DEFAULT_COPY_CONSTRUCTOR(TYPE) TYPE(const TYPE& right) : base(right.info) { property_copy(right); }
 #define DEFAULT_MOVE_CONSTRUCTOR(TYPE)\
@@ -118,8 +144,8 @@ namespace vulkan
 		DEFAULT_MOVE_ASSIGN_CONSTRUCTOR(TYPE)\
 		DEFAULT_DECONSTRUCTOR(TYPE)
 
-		operator info_type& () { return info; }
-		operator const info_type& () const { return info; }
+		operator base_info_type& () { return info; }
+		operator const base_info_type& () const { return info; }
 	};
 
 	template<>
@@ -143,7 +169,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(application_name_)& get_application_name() const;
 		void set_application_name(decltype(application_name_) value);
@@ -151,7 +177,7 @@ namespace vulkan
 		const decltype(engine_name_)& get_engine_name() const;
 		void set_engine_name(decltype(engine_name_) value);
 
-		const property<info_proxy, string> application_name_property{
+		const ::utility::property<info_proxy, string> application_name_property{
 			*this,
 				& info_proxy::get_application_name,
 				& info_proxy::set_application_name
@@ -159,8 +185,8 @@ namespace vulkan
 
 		const property<info_proxy, string> engine_name_property{
 			*this,
-				& info_proxy<ApplicationInfo>::get_engine_name,
-				& info_proxy<ApplicationInfo>::set_engine_name
+				& info_proxy::get_engine_name,
+				& info_proxy::set_engine_name
 		};
 	};
 
@@ -202,7 +228,7 @@ namespace vulkan
 			decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(application_info_)& get_application_info() const;
 		void set_application_info(decltype(application_info_));
@@ -236,6 +262,7 @@ namespace vulkan
 	struct info<Instance>
 	{
 		using handle_type = Instance;
+		using base_info_type = InstanceCreateInfo;
 		using type = info_proxy<InstanceCreateInfo>;
 	};
 
@@ -255,15 +282,15 @@ namespace vulkan
 
 			explicit info_proxy(decltype(priorities_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(priorities_)& get_priorities() const;
 		void set_priorities(decltype(priorities_) value);
 
-		const property<info_proxy<DeviceQueueCreateInfo>, decltype(priorities_)> priorities_property{
+		const property<info_proxy, decltype(priorities_)> priorities_property{
 			*this,
-				& info_proxy<DeviceQueueCreateInfo>::get_priorities,
-				& info_proxy<DeviceQueueCreateInfo>::set_priorities
+				& info_proxy::get_priorities,
+				& info_proxy::set_priorities
 		};
 
 		constexpr bool operator>(const info_proxy& right) const
@@ -299,7 +326,7 @@ namespace vulkan
 	template<>
 	struct info_proxy<DeviceCreateInfo> : info_proxy_base<DeviceCreateInfo>
 	{
-		using base = info_proxy_base<DeviceCreateInfo>;
+		using base = info_proxy_base;
 
 	private:
 		using queue_create_info = decay_to_origin_t<decltype(info.pQueueCreateInfos)>;
@@ -325,7 +352,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(queue_create_infos_set_)& get_queue_create_info_set() const;
 		void set_queue_create_info_set(decltype(queue_create_infos_set_));
@@ -338,18 +365,18 @@ namespace vulkan
 
 		const property<info_proxy, decltype(queue_create_infos_set_)> queue_create_infos_set_property{
 			*this,
-				& info_proxy<DeviceCreateInfo>::get_queue_create_info_set,
-				& info_proxy<DeviceCreateInfo>::set_queue_create_info_set,
+				& info_proxy::get_queue_create_info_set,
+				& info_proxy::set_queue_create_info_set,
 		};
 		const property<info_proxy, decltype(extension_name_strs_)> extension_name_strs_property{
 			*this,
-				& info_proxy<DeviceCreateInfo>::get_extension_name_strs,
-				& info_proxy<DeviceCreateInfo>::set_extension_names,
+				& info_proxy::get_extension_name_strs,
+				& info_proxy::set_extension_names,
 		};
 		const property<info_proxy, decltype(features_)> features_property{
 			*this,
-				& info_proxy<DeviceCreateInfo>::get_features,
-				& info_proxy<DeviceCreateInfo>::set_features,
+				& info_proxy::get_features,
+				& info_proxy::set_features,
 		};
 	};
 
@@ -357,13 +384,14 @@ namespace vulkan
 	struct info<Device>
 	{
 		using handle_type = Device;
+		using base_info_type = DeviceCreateInfo;
 		using type = info_proxy<DeviceCreateInfo>;
 	};
 
 	template<>
 	struct info_proxy<SwapchainCreateInfoKHR> : info_proxy_base<SwapchainCreateInfoKHR>
 	{
-		using base = info_proxy_base<SwapchainCreateInfoKHR>;
+		using base = info_proxy_base;
 
 	private:
 		vector<decay_to_origin_t<decltype(info.pQueueFamilyIndices)>> queue_family_indices_;
@@ -377,16 +405,16 @@ namespace vulkan
 
 			explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(queue_family_indices_set_)& get_queue_family_indices_set() const;
 		void set_queue_family_indices_set(decltype(queue_family_indices_set_));
 
-		const property<info_proxy<SwapchainCreateInfoKHR>, decltype(queue_family_indices_set_)>
+		const property<info_proxy, decltype(queue_family_indices_set_)>
 			queue_family_indices_set_property{
 			*this,
-				& info_proxy<SwapchainCreateInfoKHR>::get_queue_family_indices_set,
-				& info_proxy<SwapchainCreateInfoKHR>::set_queue_family_indices_set,
+				& info_proxy::get_queue_family_indices_set,
+				& info_proxy::set_queue_family_indices_set,
 		};
 	};
 
@@ -394,13 +422,14 @@ namespace vulkan
 	struct info<SwapchainKHR>
 	{
 		using handle_type = SwapchainKHR;
+		using base_info_type = SwapchainCreateInfoKHR;
 		using type = info_proxy<SwapchainCreateInfoKHR>;
 	};
 
 	template<>
 	struct info_proxy<SubpassDescription> : info_proxy_base<SubpassDescription>
 	{
-		using base = info_proxy_base<SubpassDescription>;
+		using base = info_proxy_base;
 
 		void property_copy(const base&)const override;
 		void property_move(base&&)const noexcept override;
@@ -423,7 +452,7 @@ namespace vulkan
 				decltype(preserve_attachments_) = {},
 				decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(input_attachments_)& get_input_attachments() const;
 		void set_input_attachments(decltype(input_attachments_));
@@ -470,7 +499,7 @@ namespace vulkan
 	template<>
 	struct info_proxy<RenderPassCreateInfo> : info_proxy_base<RenderPassCreateInfo>
 	{
-		using base = info_proxy_base<RenderPassCreateInfo>;
+		using base = info_proxy_base;
 
 	private:
 		vector<decay_to_origin_t<decltype(info.pSubpasses)>> subpass_descriptions_;
@@ -491,7 +520,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(attachment_descriptions_)& get_attachment_descriptions() const;
 		void set_attachment_descriptions(decltype(attachment_descriptions_));
@@ -523,13 +552,14 @@ namespace vulkan
 	struct info<RenderPass>
 	{
 		using handle_type = RenderPass;
+		using base_info_type = RenderPassCreateInfo;
 		using type = info_proxy<RenderPassCreateInfo>;
 	};
 
 	template<>
 	struct info_proxy<FramebufferCreateInfo> : info_proxy_base<FramebufferCreateInfo>
 	{
-		using base = info_proxy_base<FramebufferCreateInfo>;
+		using base = info_proxy_base;
 
 	private:
 		vector<decay_to_origin_t<decltype(info.pAttachments)>> image_views_;
@@ -542,7 +572,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(image_views_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(image_views_)& get_image_views() const;
 		void set_image_views(decltype(image_views_) value);
@@ -558,6 +588,7 @@ namespace vulkan
 	struct info<Framebuffer>
 	{
 		using handle_type = Framebuffer;
+		using base_info_type = FramebufferCreateInfo;
 		using type = info_proxy<FramebufferCreateInfo>;
 	};
 
@@ -577,7 +608,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(codes_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(codes_)& get_codes() const;
 		void set_codes(decltype(codes_));
@@ -593,7 +624,46 @@ namespace vulkan
 	struct info<ShaderModule>
 	{
 		using handle_type = ShaderModule;
+		using base_info_type = ShaderModuleCreateInfo;
 		using type = info_proxy<ShaderModuleCreateInfo>;
+	};
+
+	template<>
+	struct info_proxy<ImageCreateInfo> : info_proxy_base<ImageCreateInfo>
+	{
+		using base = info_proxy_base<ImageCreateInfo>;
+
+	private:
+		vector<decay_to_origin_t<decltype(info.pQueueFamilyIndices)>> queue_family_indices_;
+		set<std::decay_t<decltype(queue_family_indices_)::value_type>> queue_family_indices_set_;
+
+		void property_copy(const base&)const override;
+		void property_move(base&&)const noexcept override;
+
+	public:
+		DEFAULT_RULE_OF_5(info_proxy)
+
+			explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
+
+		info_proxy(base_info_type = {});
+
+		const decltype(queue_family_indices_set_)& get_queue_family_indices_set() const;
+		void set_queue_family_indices_set(decltype(queue_family_indices_set_));
+
+		const property<info_proxy, decltype(queue_family_indices_set_)>
+			queue_family_indices_set_property{
+			*this,
+				& info_proxy::get_queue_family_indices_set,
+				& info_proxy::set_queue_family_indices_set,
+		};
+	};
+
+	template<>
+	struct info<Image>
+	{
+		using handle_type = Image;
+		using base_info_type = ImageCreateInfo;
+		using type = info_proxy<ImageCreateInfo>;
 	};
 
 	template<>
@@ -612,7 +682,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(map_entries_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(map_entries_)& get_map_entries() const;
 		void set_map_entries(decltype(map_entries_));
@@ -644,7 +714,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(entry_name_)& get_entry_name() const;
 		void set_entry_name(decltype(entry_name_) value);
@@ -685,7 +755,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(vertex_input_binding_descriptions_)& get_vertex_input_binding_descriptions() const;
 		void set_vertex_input_binding_descriptions(decltype(vertex_input_binding_descriptions_));
@@ -728,7 +798,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(viewports_)& get_viewports() const;
 		void set_viewports(decltype(viewports_));
@@ -764,7 +834,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(attachment_states_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(attachment_states_)& get_attachment_states() const;
 		void set_attachment_states(decltype(attachment_states_));
@@ -797,7 +867,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(set_layouts_)& get_set_layouts() const;
 		void set_set_layouts(decltype(set_layouts_));
@@ -821,11 +891,19 @@ namespace vulkan
 	struct info<PipelineLayout>
 	{
 		using handle_type = PipelineLayout;
+		using base_info_type = PipelineLayoutCreateInfo;
 		using type = info_proxy<PipelineLayoutCreateInfo>;
 	};
 
+	struct graphics_pipeline_create_info : GraphicsPipelineCreateInfo
+	{
+		using base = GraphicsPipelineCreateInfo;
+
+		PipelineCache cache;
+	};
+
 	template<>
-	struct info_proxy<GraphicsPipelineCreateInfo> : info_proxy_base<GraphicsPipelineCreateInfo>
+	struct info_proxy<graphics_pipeline_create_info> : info_proxy_base<graphics_pipeline_create_info>
 	{
 		using base = info_proxy_base;
 
@@ -862,7 +940,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(stages_info_proxies_)& get_stages_info_proxies() const;
 		void set_stages_info_proxies(decltype(stages_info_proxies_));
@@ -949,8 +1027,9 @@ namespace vulkan
 	template<>
 	struct info<GraphicsPipeline>
 	{
-		using handle_type = GraphicsPipeline::handle_type;
-		using type = info_proxy<GraphicsPipelineCreateInfo>;
+		using handle_type = GraphicsPipeline;
+		using base_info_type = graphics_pipeline_create_info;
+		using type = info_proxy<graphics_pipeline_create_info>;
 	};
 
 	template<>
@@ -968,7 +1047,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(inheritance_info_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(inheritance_info_)& get_inheritance_info() const;
 		void set_inheritance_info(decltype(inheritance_info_));
@@ -996,7 +1075,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(clear_values_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(clear_values_)& get_clear_values() const;
 		void set_clear_values(decltype(clear_values_));
@@ -1024,7 +1103,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(samplers_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(samplers_)& get_samplers() const;
 		void set_samplers(decltype(samplers_));
@@ -1054,7 +1133,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(bindings_proxies_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(bindings_proxies_)& get_binding_proxies() const;
 		void set_binding_proxies(decltype(bindings_proxies_));
@@ -1070,6 +1149,7 @@ namespace vulkan
 	struct info<DescriptorSetLayout>
 	{
 		using handle_type = DescriptorSetLayout;
+		using base_info_type = DescriptorSetLayoutCreateInfo;
 		using type = info_proxy<DescriptorSetLayoutCreateInfo>;
 	};
 
@@ -1088,7 +1168,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(pool_sizes_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(pool_sizes_)& get_pool_sizes() const;
 		void set_pool_sizes(decltype(pool_sizes_));
@@ -1104,6 +1184,7 @@ namespace vulkan
 	struct info<DescriptorPool>
 	{
 		using handle_type = DescriptorPool;
+		using base_info_type = DescriptorPoolCreateInfo;
 		using type = info_proxy<DescriptorPoolCreateInfo>;
 	};
 
@@ -1123,7 +1204,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(descriptor_set_layouts_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(descriptor_set_layouts_)& get_descriptor_set_layouts() const;
 		void set_descriptor_set_layouts(decltype(descriptor_set_layouts_));
@@ -1139,6 +1220,7 @@ namespace vulkan
 	struct info<DescriptorSet>
 	{
 		using handle_type = DescriptorSet;
+		using base_info_type = DescriptorSetAllocateInfo;
 		using type = info_proxy<DescriptorSetAllocateInfo>;
 	};
 
@@ -1165,7 +1247,7 @@ namespace vulkan
 				decltype(info) = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(image_infos_)& get_image_infos() const;
 		void set_image_infos(decltype(image_infos_));
@@ -1218,7 +1300,7 @@ namespace vulkan
 				decltype(info) info = {}
 		);
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(wait_semaphores_)& get_wait_semaphores() const;
 		void set_wait_semaphores(decltype(wait_semaphores_));
@@ -1278,7 +1360,7 @@ namespace vulkan
 				decltype(results_) = {},
 				decltype(info) = {}
 		);
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(wait_semaphores_)& get_wait_semaphores() const;
 		void set_wait_semaphores(decltype(wait_semaphores_));
@@ -1331,7 +1413,7 @@ namespace vulkan
 
 			explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
 
-		info_proxy(info_type = {});
+		info_proxy(base_info_type = {});
 
 		const decltype(queue_family_indices_set_)& get_queue_family_indices_set() const;
 		void set_queue_family_indices_set(decltype(queue_family_indices_set_));
@@ -1347,8 +1429,12 @@ namespace vulkan
 	struct info<Buffer>
 	{
 		using handle_type = Buffer;
+		using base_info_type = BufferCreateInfo;
 		using type = info_proxy<BufferCreateInfo>;
 	};
+
+	template<typename T>
+	using info_base_t = typename info<T>::base_info_type;
 
 	template<typename T>
 	using info_t = typename info<T>::type;

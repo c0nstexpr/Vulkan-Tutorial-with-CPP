@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -93,7 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -112,7 +112,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -133,7 +133,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -147,24 +147,45 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="utility.h" />
-    <ClInclude Include="vulkan_info.h" />
-    <ClInclude Include="vulkan_object.h" />
-    <ClInclude Include="vulkan_sample.h" />
-    <ClInclude Include="vulkan_utility.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="object.cpp" />
-    <ClCompile Include="utility.cpp" />
-    <ClCompile Include="vulkan_info.cpp" />
-    <ClCompile Include="vulkan_object.cpp" />
+    <ClCompile Include="utility\utility.cpp" />
+    <ClCompile Include="vulkan\utility\info\info.cpp" />
+    <ClCompile Include="vulkan\utility\obejct\memory.cpp" />
+    <ClCompile Include="vulkan\utility\obejct\object.cpp" />
+    <ClCompile Include="vulkan\utility\shaderc\shaderc.cpp" />
+    <ClCompile Include="vulkan\utility\stb\image.cpp" />
+    <ClCompile Include="vulkan\utility\utility_core.cpp" />
     <ClCompile Include="vulkan_sample.cpp" />
-    <ClCompile Include="vulkan_utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <None Include="resource\shaders\shader.frag" />
+    <None Include="resource\shaders\shader.vert" />
+    <None Include="utility\property.tpp" />
+    <None Include="utility\utility.tpp" />
+    <None Include="vulkan\utility\obejct\memory.tpp" />
+    <None Include="vulkan\utility\obejct\object.tpp" />
+    <None Include="vulkan\utility\obejct\object_traits.tpp" />
+    <None Include="vulkan\utility\stb\image.tpp" />
+    <None Include="vulkan_sample.tpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utility\constant\constant.h" />
+    <ClInclude Include="utility\constant\numberic.h" />
+    <ClInclude Include="utility\property.h" />
+    <ClInclude Include="utility\time.h" />
+    <ClInclude Include="utility\type_traits.h" />
+    <ClInclude Include="utility\utility.h" />
+    <ClInclude Include="vulkan\utility\constant\constant.h" />
+    <ClInclude Include="vulkan\utility\info\info.h" />
+    <ClInclude Include="vulkan\utility\obejct\memory.h" />
+    <ClInclude Include="vulkan\utility\obejct\object.h" />
+    <ClInclude Include="vulkan\utility\obejct\object_traits.h" />
+    <ClInclude Include="vulkan\utility\shaderc\shaderc.h" />
+    <ClInclude Include="vulkan\utility\stb\image.h" />
+    <ClInclude Include="vulkan\utility\stb\pixel_traits.h" />
+    <ClInclude Include="vulkan\utility\utility.h" />
+    <ClInclude Include="vulkan\utility\utility_core.h" />
+    <ClInclude Include="vulkan_sample.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

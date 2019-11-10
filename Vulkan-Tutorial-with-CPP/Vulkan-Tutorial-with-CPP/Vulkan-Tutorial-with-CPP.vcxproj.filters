@@ -13,53 +13,167 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="utility.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="vulkan_info.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="vulkan_object.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="vulkan_sample.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="vulkan_utility.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <Filter Include="资源文件\shaders">
+      <UniqueIdentifier>{c6d301f5-8e05-4183-a4c0-373406dd3148}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan">
+      <UniqueIdentifier>{fe8ee6d7-fde3-4e2c-9cbc-4a78559bbeb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility">
+      <UniqueIdentifier>{434a44bf-5503-426b-b1ee-34e62b3abdf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility\object">
+      <UniqueIdentifier>{d8a8bdc2-56d7-4294-a228-a456fa45a09a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility\info">
+      <UniqueIdentifier>{1b6e0bf3-f685-4502-9899-1e8136160540}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility\constant">
+      <UniqueIdentifier>{7eb6d24c-b3d2-425f-99f4-4e7a4f8b3d81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility\shaderc">
+      <UniqueIdentifier>{49ae9d3b-f1f6-4a9f-9270-c5bd47046b95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\utility">
+      <UniqueIdentifier>{479ab106-fef1-4ca9-9dfc-67152e8a3bfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\utility">
+      <UniqueIdentifier>{bb7aa051-2f57-432e-8c73-03391a3a0753}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility\stb">
+      <UniqueIdentifier>{d93bf526-7c33-418f-a669-24657dac22f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\utility\constant">
+      <UniqueIdentifier>{e7472153-9bc9-4a76-b7c4-861fbdc1b263}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\vulkan">
+      <UniqueIdentifier>{5b3bda68-bc27-4c7c-857d-d2f4a848f157}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\vulkan\utility">
+      <UniqueIdentifier>{191ddd9c-669c-4eed-a83d-0585ddac6326}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\vulkan\utility\info">
+      <UniqueIdentifier>{d021b409-a79a-4c92-8d57-8197a9313fa7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\vulkan\utility\stb">
+      <UniqueIdentifier>{3eb38656-2fc4-4b39-a6f8-d747269f2504}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\vulkan\utility\object">
+      <UniqueIdentifier>{e7041199-152b-4a9a-9aba-f86e978990e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\vulkan\utility\shaderc">
+      <UniqueIdentifier>{96e1fd75-593b-4723-892f-2675f2b8d6f7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="object.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="utility\utility.cpp">
+      <Filter>源文件\utility</Filter>
     </ClCompile>
-    <ClCompile Include="utility.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="vulkan\utility\info\info.cpp">
+      <Filter>源文件\vulkan\utility\info</Filter>
     </ClCompile>
-    <ClCompile Include="vulkan_info.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="vulkan\utility\obejct\object.cpp">
+      <Filter>源文件\vulkan\utility\object</Filter>
     </ClCompile>
-    <ClCompile Include="vulkan_object.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="vulkan\utility\obejct\memory.cpp">
+      <Filter>源文件\vulkan\utility\object</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan\utility\stb\image.cpp">
+      <Filter>源文件\vulkan\utility\stb</Filter>
     </ClCompile>
     <ClCompile Include="vulkan_sample.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="vulkan_utility.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="vulkan\utility\shaderc\shaderc.cpp">
+      <Filter>源文件\vulkan\utility\shaderc</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan\utility\utility_core.cpp">
+      <Filter>头文件\vulkan\utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.frag">
-      <Filter>资源文件</Filter>
+    <None Include="resource\shaders\shader.vert">
+      <Filter>资源文件\shaders</Filter>
     </None>
-    <None Include="shaders\shader.vert">
-      <Filter>资源文件</Filter>
+    <None Include="resource\shaders\shader.frag">
+      <Filter>资源文件\shaders</Filter>
     </None>
+    <None Include="vulkan\utility\obejct\object.tpp">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </None>
+    <None Include="vulkan\utility\obejct\object_traits.tpp">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </None>
+    <None Include="vulkan\utility\obejct\memory.tpp">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </None>
+    <None Include="vulkan\utility\stb\image.tpp">
+      <Filter>头文件\vulkan\utility\stb</Filter>
+    </None>
+    <None Include="utility\utility.tpp">
+      <Filter>头文件\utility</Filter>
+    </None>
+    <None Include="utility\property.tpp">
+      <Filter>头文件\utility</Filter>
+    </None>
+    <None Include="vulkan_sample.tpp">
+      <Filter>头文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utility\property.h">
+      <Filter>头文件\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\utility.h">
+      <Filter>头文件\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\time.h">
+      <Filter>头文件\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\constant\numberic.h">
+      <Filter>头文件\utility\constant</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\constant\constant.h">
+      <Filter>头文件\utility\constant</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\utility.h">
+      <Filter>头文件\vulkan\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\type_traits.h">
+      <Filter>头文件\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\info\info.h">
+      <Filter>头文件\vulkan\utility\info</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\constant\constant.h">
+      <Filter>头文件\vulkan\utility\constant</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\obejct\memory.h">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\obejct\object.h">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\obejct\object_traits.h">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_sample.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\stb\image.h">
+      <Filter>头文件\vulkan\utility\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\stb\pixel_traits.h">
+      <Filter>头文件\vulkan\utility\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\shaderc\shaderc.h">
+      <Filter>头文件\vulkan\utility\shaderc</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\utility_core.h">
+      <Filter>头文件\vulkan\utility</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
