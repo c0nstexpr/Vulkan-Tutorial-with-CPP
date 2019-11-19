@@ -6,6 +6,7 @@ namespace vulkan::utility::constant
 {
 	using namespace vk;
 
+	using std::pair;
 	using glm::float32;
 	using glm::float64;
 	using glm::vec2;
@@ -14,42 +15,49 @@ namespace vulkan::utility::constant
 	using glm::uvec4;
 	using glm::ivec2;
 
-	template<typename T>
-	constexpr auto whole_size = T{VK_WHOLE_SIZE};
+	template<typename T = DeviceSize>
+	static constexpr auto whole_size = T{VK_WHOLE_SIZE};
+
+	template<typename T = uint32_t>
+	static constexpr auto queue_family_ignore = T{VK_QUEUE_FAMILY_IGNORED};
 
 	template<typename T>
-	constexpr auto format = Format::eUndefined;
+	static constexpr auto format = Format::eUndefined;
 
 	template<>
-	constexpr auto format<float32> = Format::eR32Sfloat;
+	static constexpr auto format<float32> = Format::eR32Sfloat;
 
 	template<>
-	constexpr auto format<float64> = Format::eR64Sfloat;
+	static constexpr auto format<float64> = Format::eR64Sfloat;
 
 	template<>
-	constexpr auto format<vec2> = Format::eR32G32Sfloat;
+	static constexpr auto format<vec2> = Format::eR32G32Sfloat;
 
 	template<>
-	constexpr auto format<ivec2> = Format::eR32G32Sint;
+	static constexpr auto format<ivec2> = Format::eR32G32Sint;
 
 	template<>
-	constexpr auto format<vec3> = Format::eR32G32B32Sfloat;
+	static constexpr auto format<vec3> = Format::eR32G32B32Sfloat;
 
 	template<>
-	constexpr auto format<vec4> = Format::eR32G32B32A32Sfloat;
+	static constexpr auto format<vec4> = Format::eR32G32B32A32Sfloat;
 
 	template<>
-	constexpr auto format<uvec4> = Format::eR64Sfloat;;
+	static constexpr auto format<uvec4> = Format::eR64Sfloat;
 
 	template<typename T>
-	constexpr auto index_type = IndexType::eNoneNV;
+	static constexpr auto index_type = IndexType::eNoneNV;
 
 	template<>
-	constexpr auto index_type<uint32_t> = IndexType::eUint32;
+	static constexpr auto index_type<uint32_t> = IndexType::eUint32;
 
 	template<>
-	constexpr auto index_type<uint16_t> = IndexType::eUint16;
+	static constexpr auto index_type<uint16_t> = IndexType::eUint16;
 
 	template<>
-	constexpr auto index_type<uint8_t> = IndexType::eUint8EXT;
+	static constexpr auto index_type<uint8_t> = IndexType::eUint8EXT;
+
+	static constexpr pair<AccessFlagBits, PipelineStageFlagBits> required_access_and_pipeline_stage(const ImageLayout);
 }
+
+#include "constant.tpp"

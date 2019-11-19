@@ -144,28 +144,28 @@ namespace vulkan::utility
 
     // ReSharper restore CppFunctionIsNotImplemented
 
-    using instance = object<Instance>;
-    using device = object<Device>;
-    using physical_device = object<PhysicalDevice>;
-    using debug_messenger = object<DebugUtilsMessengerEXT>;
-    using surface = object<SurfaceKHR>;
-    using swap_chain = object<SwapchainKHR>;
-    using image_view = object<ImageView>;
-    using render_pass = object<RenderPass>;
-    using frame_buffer = object<Framebuffer>;
-    using shader_module = object<ShaderModule>;
-    using buffer = object<Buffer>;
-    using image = object<Image>;
-    using descriptor_set_layout = object<DescriptorSetLayout>;
-    using descriptor_pool = pool_object<DescriptorPool>;
-    using descriptor_set = object<DescriptorSet>;
-    using pipeline_layout = object<PipelineLayout>;
-    using device_memory = object<DeviceMemory>;
-    using graphics_pipeline = object<GraphicsPipeline>;
-    using command_pool = pool_object<CommandPool>;
-    using command_buffer = object<CommandBuffer>;
-    using semaphore = object<Semaphore>;
-    using fence = object<Fence>;
+    using instance_object = object<Instance>;
+    using device_object = object<Device>;
+    using physical_device_object = object<PhysicalDevice>;
+    using debug_messenger_object = object<DebugUtilsMessengerEXT>;
+    using surface_object = object<SurfaceKHR>;
+    using swap_chain_object = object<SwapchainKHR>;
+    using image_view_object = object<ImageView>;
+    using render_pass_object = object<RenderPass>;
+    using frame_buffer_object = object<Framebuffer>;
+    using shader_module_object = object<ShaderModule>;
+    using buffer_object = object<Buffer>;
+    using image_object = object<Image>;
+    using descriptor_set_layout_object = object<DescriptorSetLayout>;
+    using descriptor_pool_object = pool_object<DescriptorPool>;
+    using descriptor_set_object = object<DescriptorSet>;
+    using pipeline_layout_object = object<PipelineLayout>;
+    using device_memory_object = object<DeviceMemory>;
+    using graphics_pipeline_object = object<GraphicsPipeline>;
+    using command_pool_object = pool_object<CommandPool>;
+    using command_buffer_object = object<CommandBuffer>;
+    using semaphore_object = object<Semaphore>;
+    using fence_object = object<Fence>;
 
     struct vertex
     {

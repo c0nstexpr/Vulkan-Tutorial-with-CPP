@@ -21,18 +21,25 @@ namespace vulkan::utility
         vector<pair<MemoryRequirements, size_t>>&
     );
 
-    [[nodiscard]] pair<device_memory, vector<DeviceSize>> generate_buffer_memory_info(
-        const device&,
+    [[nodiscard]] pair<device_memory_object, vector<DeviceSize>> generate_buffer_memory_info(
+        const device_object&,
         const vector<Buffer>&,
         const PhysicalDevice&,
         const MemoryPropertyFlags
     );
 
+    [[nodiscard]] pair<device_memory_object, vector<DeviceSize>> generate_image_memory_info(
+        const device_object&,
+        const vector<Image>&,
+        const PhysicalDevice&,
+        const MemoryPropertyFlags
+    );
+
     template<typename Input>
-    void write(const device_memory&, const device&, const Input, const Input, const DeviceSize = 0);
+    void write(const device_memory_object&, const device_object&, const Input, const Input, const DeviceSize = 0);
 
     template<typename T>
-    void write(const device_memory&, const device&, const T&, const DeviceSize = 0);
+    void write(const device_memory_object&, const device_object&, const T&, const DeviceSize = 0);
 
     template<bool Cached, typename... Types>
     class memory
@@ -40,12 +47,13 @@ namespace vulkan::utility
     public:
         using type_list = type_list<Types...>;
 
-        static constexpr auto host_memory_property = MemoryPropertyFlagBits::eHostVisible |
-            (Cached ? MemoryPropertyFlagBits::eHostCached : MemoryPropertyFlagBits{0});
+        static constexpr auto host_memory_property =
+            MemoryPropertyFlagBits::eHostVisible |
+            (Cached ? MemoryPropertyFlagBits::eHostCached : MemoryPropertyFlagBits{});
 
         static constexpr auto device_memory_property = MemoryPropertyFlagBits::eDeviceLocal;
 
-        static constexpr std::array<size_t, type_list::size> type_sizes = {sizeof(Types)...};
+        static constexpr array<size_t, type_list::size> type_sizes = {sizeof(Types)...};
 
         template<typename T>
         static constexpr auto type_index = type_list::template type_index_v<T>;
@@ -60,28 +68,19 @@ namespace vulkan::utility
             static constexpr array<size_t, type_list::size> counts = {Counts...};
             static_assert(type_list::size == counts.size(), "incompatible size");
 
-            template<typename T, size_t Count>
-            struct element_type : type_identity<array<T, Count>> {};
-
             template<typename T>
-            struct element_type<T, 1> : type_identity<T> {};
-
-            template<typename T>
-            struct element_type<T, 0> : type_identity<T> {};
-
-            template<typename T>
-            using value_type = typename element_type<T, counts[type_index<T>]>::type;
+            using value_type = array<T, counts[type_index<T>]>;
 
         private:
             tuple<value_type<Types>...> type_values_;
 
-            const device* device_ = nullptr;
+            const device_object* device_ = nullptr;
 
-            array<buffer, type_list::size> device_local_buffers_;
-            device_memory device_local_memory_;
+            array<buffer_object, type_list::size> device_local_buffers_;
+            device_memory_object device_local_memory_;
 
-            array<buffer, type_list::size> host_buffers_;
-            device_memory host_memory_;
+            array<buffer_object, type_list::size> host_buffers_;
+            device_memory_object host_memory_;
 
             array<DeviceSize, type_list::size> type_offsets_{};
 
@@ -91,39 +90,42 @@ namespace vulkan::utility
 
             void bind_buffer_memory() const;
 
-            template<typename T>
-            void write_impl(value_type<T> values);
+            template<typename T, typename Op = empty_type>
+            void write_impl(value_type<T>, const Op & = {});
+
+            array<size_t, type_list::size> required_sizes_ = type_sizes;
 
         public:
             array_values() = default;
-            explicit array_values(const device&);
 
             array_values(
-                const device&,
-                const array<BufferUsageFlags, type_list::size>&
+                const device_object&,
+                const array<BufferUsageFlags, type_list::size>&,
+                const initializer_list<pair<size_t, size_t>> = {}
             );
 
             array_values(
-                const device&,
+                const PhysicalDevice&,
+                const device_object&,
                 const array<BufferUsageFlags, type_list::size>&,
-                const PhysicalDevice&
+                const initializer_list<pair<size_t, size_t>> = {}
             );
 
             void initialize(const PhysicalDevice&);
 
             template<typename... T>
-            void write(value_type<T>... values)
-            {
-                (write_impl<T>(values), ...);
-            }
+            void write(value_type<T> ...);
 
-            template<typename... T>
+            template<typename T, typename Op = empty_type>
+            void write(value_type<T>, const Op & = {});
+
+            template<typename...>
             void flush();
 
-            template<class T>
+            template<typename>
             constexpr const auto& read() const;
 
-            void write_transfer_command(const command_buffer&) const;
+            void write_transfer_command(const CommandBuffer&) const;
 
             constexpr const auto& device_local_buffer(const size_t i) const;
             constexpr const auto& host_buffer(const size_t i) const;

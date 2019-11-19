@@ -19,5 +19,5 @@ namespace vulkan::utility::stb
 	};
 
 	template<channel Channel>
-	using pixel_t = vec<static_cast<length_t>(Channel), float>;
+	using pixel_t = vec<static_cast<length_t>(Channel), std::byte>;
 }

@@ -7,29 +7,6 @@
 
 namespace vulkan::utility
 {
-	using namespace vk;
-	using namespace ::utility::type_traits;
-	using std::string;
-	using std::vector;
-	using std::set;
-	using std::optional;
-	using ::utility::property;
-	using std::nullopt;
-
-	// ReSharper disable CppInconsistentNaming
-	struct GraphicsPipeline : Pipeline
-	{
-		using base = Pipeline;
-		using base::base;
-	};
-
-	struct ComputePipeline : Pipeline
-	{
-		using base = Pipeline;
-	};
-
-	// ReSharper restore CppInconsistentNaming
-
 	template<typename T>
 	struct info;
 
@@ -119,7 +96,7 @@ namespace vulkan::utility
 	public:
 		T info;
 
-		info_proxy_base(base_info_type i = base_info_type{}) : info(std::move(i)) {}
+		constexpr info_proxy_base(base_info_type i = base_info_type{}) : info(std::move(i)) {}
 
 #define DEFAULT_COPY_CONSTRUCTOR(TYPE) TYPE(const TYPE& right) : base(right.info) { property_copy(right); }
 #define DEFAULT_MOVE_CONSTRUCTOR(TYPE)\
@@ -144,8 +121,8 @@ namespace vulkan::utility
 		DEFAULT_MOVE_ASSIGN_CONSTRUCTOR(TYPE)\
 		DEFAULT_DECONSTRUCTOR(TYPE)
 
-		operator base_info_type& () { return info; }
-		operator const base_info_type& () const { return info; }
+		constexpr operator base_info_type& () { return info; }
+		constexpr operator const base_info_type& () const { return info; }
 	};
 
 	template<>
@@ -177,7 +154,7 @@ namespace vulkan::utility
 		const decltype(engine_name_)& get_engine_name() const;
 		void set_engine_name(decltype(engine_name_) value);
 
-		const ::utility::property<info_proxy, string> application_name_property{
+		const property<info_proxy, string> application_name_property{
 			*this,
 				& info_proxy::get_application_name,
 				& info_proxy::set_application_name
@@ -910,7 +887,7 @@ namespace vulkan::utility
 	private:
 		vector<decay_to_origin_t<decltype(info.pStages)>> stages_;
 
-		vector<info_proxy<decltype(stages_)::value_type>> stages_info_proxies_;
+		vector<info_proxy<decltype(stages_)::value_type>> stage_info_proxies_;
 		optional<info_proxy<decay_to_origin_t<decltype(info.pVertexInputState)>>> vertex_input_state_;
 		optional<decay_to_origin_t<decltype(info.pInputAssemblyState)>> input_assembly_state_;
 		optional<decay_to_origin_t<decltype(info.pTessellationState)>> tessellation_state_;
@@ -927,7 +904,7 @@ namespace vulkan::utility
 		DEFAULT_RULE_OF_5(info_proxy)
 
 			explicit info_proxy(
-				decltype(stages_info_proxies_),
+				decltype(stage_info_proxies_),
 				decltype(vertex_input_state_) = {},
 				decltype(input_assembly_state_) = {},
 				decltype(tessellation_state_) = {},
@@ -942,8 +919,8 @@ namespace vulkan::utility
 
 		info_proxy(base_info_type = {});
 
-		const decltype(stages_info_proxies_)& get_stages_info_proxies() const;
-		void set_stages_info_proxies(decltype(stages_info_proxies_));
+		const decltype(stage_info_proxies_)& get_stage_info_proxies() const;
+		void set_stage_info_proxies(decltype(stage_info_proxies_));
 
 		const decltype(vertex_input_state_)& get_vertex_input_state() const;
 		void set_vertex_input_state(decltype(vertex_input_state_));
@@ -972,10 +949,10 @@ namespace vulkan::utility
 		const decltype(dynamic_state_)& get_dynamic_state() const;
 		void set_dynamic_state(decltype(dynamic_state_));
 
-		const property<info_proxy, decltype(stages_info_proxies_)> stages_info_proxies_property{
+		const property<info_proxy, decltype(stage_info_proxies_)> stages_info_proxies_property{
 			*this,
-				& info_proxy::get_stages_info_proxies,
-				& info_proxy::set_stages_info_proxies,
+				& info_proxy::get_stage_info_proxies,
+				& info_proxy::set_stage_info_proxies,
 		};
 		const property<info_proxy, decltype(vertex_input_state_)> vertex_input_state_property{
 			*this,

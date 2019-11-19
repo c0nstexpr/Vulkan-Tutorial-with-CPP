@@ -17,7 +17,7 @@ namespace vulkan
         using debug_messenger_type = decltype(debug_messenger_);
         using debug_messenger_info_type = debug_messenger_type::info_type;
 
-        debug_messenger_ = debug_messenger{
+        debug_messenger_ = debug_messenger_object{
             {
                 {},
                 {
@@ -142,16 +142,16 @@ namespace vulkan
         const auto& formats = physical_device_->getSurfaceFormatsKHR(*surface_, DispatchLoaderStatic{});
         const SurfaceFormatKHR required_format = []()
         {
-            SurfaceFormatKHR format;
-            format.format = Format::eB8G8R8A8Unorm;
-            format.colorSpace = ColorSpaceKHR::eSrgbNonlinear;
-            return format;
+            SurfaceFormatKHR format_khr;
+            format_khr.format = Format::eB8G8R8A8Unorm;
+            format_khr.colorSpace = ColorSpaceKHR::eSrgbNonlinear;
+            return format_khr;
         }();
         const auto available_format = std::find(formats.cbegin(), formats.cend(),
             required_format) == formats.end() ? formats.front() : required_format;
 
         const auto& present_modes = physical_device_->getSurfacePresentModesKHR(*surface_, DispatchLoaderStatic{});
-        const auto required_present_mode = PresentModeKHR::eFifo;
+        static constexpr auto required_present_mode = PresentModeKHR::eFifo;
         const auto present_mode =
             std::find(present_modes.cbegin(), present_modes.cend(), required_present_mode) !=
             present_modes.cend() ? required_present_mode : PresentModeKHR::eFifo;
@@ -265,7 +265,7 @@ namespace vulkan
             image_views_.cbegin(),
             image_views_.cend(),
             frame_buffers_.begin(),
-            [this](const image_view& image_view)
+            [this](const image_view_object& image_view)
             {
                 return frame_buffer_type{frame_buffer_info_type{
                     {*image_view},
@@ -481,10 +481,10 @@ namespace vulkan
 
     void vulkan_sample::generate_buffer_allocate_info()
     {
-        transfer_memory_ = {device_, {
+        transfer_memory_ = {*physical_device_, device_, {
             BufferUsageFlagBits::eVertexBuffer,
             BufferUsageFlagBits::eIndexBuffer
-        }, *physical_device_};
+        }};
     }
 
     void vulkan_sample::generate_graphics_command_pool_create_info()
@@ -511,6 +511,35 @@ namespace vulkan
                 }};
     }
 
+    void vulkan_sample::generate_image_create_info()
+    {
+        using image_type = decltype(image_);
+        using image_info_type = image_type::info_type;
+
+        texture_image_ = stb::image<channel::rgb_alpha>{"freshman.jpg"};
+        image_buffer_ = buffer_object{
+            BufferCreateInfo{{},
+            texture_image_.pixel_size() * sizeof(decltype(texture_image_)::pixel_t),
+            BufferUsageFlagBits::eTransferSrc}
+        };
+
+        image_ = image_type{image_info_type::base_info_type{
+            {},
+            ImageType::e2D,
+            Format::eR8G8B8A8Unorm,
+            Extent3D{
+            static_cast<uint32_t>(texture_image_.width()),
+            static_cast<uint32_t>(texture_image_.height()),
+            1
+        },
+            1,
+            1,
+            SampleCountFlagBits::e1,
+            ImageTiling::eOptimal,
+            ImageUsageFlagBits::eTransferDst | ImageUsageFlagBits::eSampled,
+        }};
+    }
+
     void vulkan_sample::generate_sync_objects_create_info()
     {
         using semaphore_type = decltype(swap_chain_image_syn_)::value_type;
@@ -527,8 +556,54 @@ namespace vulkan
             syn = fence_type{fence_info_type{FenceCreateFlagBits::eSignaled}};
     }
 
+    void vulkan_sample::submit_precondition_command()
+    {
+        const auto& front_command_buffer = *graphics_command_buffers_.front();
+        auto& front_submit_info = submit_infos_.front();
+
+        front_submit_info = {};
+        front_submit_info.command_buffers_property = {front_command_buffer};
+        command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eOneTimeSubmit};
+
+        front_command_buffer.begin(command_buffer_begin_info_, device_.dispatch());
+
+        transfer_memory_.write_transfer_command(front_command_buffer);
+
+        transition_image_layout(
+            front_command_buffer,
+            *image_,
+            ImageLayout::eUndefined,
+            ImageLayout::eTransferDstOptimal,
+            device_.dispatch()
+        );
+        front_command_buffer.copyBufferToImage(
+            *image_buffer_,
+            *image_,
+            ImageLayout::eTransferDstOptimal,
+            {BufferImageCopy{
+                0, 0, 0, {ImageAspectFlagBits::eColor, 0, 0, 1}, {0, 0, 0}, image_.info().info.extent
+            }},
+            device_.dispatch()
+        );
+        transition_image_layout(
+            front_command_buffer,
+            *image_,
+            ImageLayout::eTransferDstOptimal,
+            ImageLayout::eShaderReadOnlyOptimal,
+            device_.dispatch()
+        );
+
+        front_command_buffer.end(device_.dispatch());
+
+        graphics_queue_.submit({front_submit_info}, nullptr, device_.dispatch());
+    }
+
     void vulkan_sample::generate_render_info()
     {
+        render_pass_begin_infos_.resize(frame_buffers_.size());
+        submit_infos_.resize(graphics_command_buffers_.size());
+        present_infos_.resize(submit_infos_.size());
+
         for(const auto& descriptor_set : descriptor_sets_)
             device_->updateDescriptorSets({info_proxy<WriteDescriptorSet>{
                 {},
@@ -537,15 +612,14 @@ namespace vulkan
                 {*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
         }}, {}, device_.dispatch());
 
-        command_buffer_begin_info_.info = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
+        submit_precondition_command();
 
-        render_pass_begin_infos_.resize(frame_buffers_.size());
-        submit_infos_.resize(graphics_command_buffers_.size());
-        present_infos_.resize(submit_infos_.size());
+        command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
+        graphics_queue_.waitIdle(device_.dispatch());
         std::for_each(
             graphics_command_buffers_.begin(),
             graphics_command_buffers_.end(),
-            [this, index = size_t{0}](command_buffer& buffer)mutable
+            [this, index = size_t{0}](command_buffer_object& buffer)mutable
         {
             render_pass_begin_infos_[index] = info_proxy<RenderPassBeginInfo>{
                 {{std::array<float, 4>{1, 1, 1, 1}}},
@@ -556,9 +630,8 @@ namespace vulkan
             }
             };
 
-            buffer->begin(command_buffer_begin_info_.info, device_.dispatch());
-            transfer_memory_.write_transfer_command(buffer);
-            buffer->beginRenderPass(render_pass_begin_infos_[index].info, SubpassContents::eInline, device_.dispatch());
+            buffer->begin(command_buffer_begin_info_, device_.dispatch());
+            buffer->beginRenderPass(render_pass_begin_infos_[index], SubpassContents::eInline, device_.dispatch());
             buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
             buffer->bindVertexBuffers(0, {*transfer_memory_.device_local_buffer(vertices_buffer_index)}, {0}, device_.dispatch());
             buffer->bindIndexBuffer(
@@ -677,16 +750,6 @@ namespace vulkan
         device_->bindBufferMemory(*transform_buffer_, *transform_buffer_memory_, 0, device_.dispatch());
         set_transform({mat4{1}});
 
-        generate_buffer_allocate_info();
-        transfer_memory_.initialize(*physical_device_);
-        set_vertices({
-            vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-            vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-            });
-        set_indices(array<uint32_t, 6>{0, 1, 2, 2, 3, 0});
-
         generate_graphics_command_pool_create_info();
         graphics_command_pool_.initialize(device_);
 
@@ -695,6 +758,36 @@ namespace vulkan
             device_,
             graphics_command_buffers_.front().info()
         );
+
+        generate_buffer_allocate_info();
+        transfer_memory_.initialize(*physical_device_);
+        set_vertices({
+            vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+            vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+            vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+            });
+        set_indices({0, 1, 2, 2, 3, 0});
+
+        generate_image_create_info();
+        image_.initialize(device_);
+        image_buffer_.initialize(device_);
+        image_buffer_memory_ = generate_buffer_memory_info(
+            device_,
+            {*image_buffer_},
+            *physical_device_,
+            MemoryPropertyFlagBits::eHostVisible
+        ).first;
+        image_buffer_memory_.initialize(device_);
+        device_->bindBufferMemory(*image_buffer_, *image_buffer_memory_, 0, device_.dispatch());
+        image_memory_ = generate_image_memory_info(
+            device_,
+            {*image_},
+            *physical_device_,
+            MemoryPropertyFlagBits::eDeviceLocal
+        ).first;
+        image_memory_.initialize(device_);
+        device_->bindImageMemory(*image_, *image_memory_, 0, device_.dispatch());
 
         generate_sync_objects_create_info();
         for(auto& semaphore : swap_chain_image_syn_)
@@ -714,20 +807,19 @@ namespace vulkan
         const auto old_extent = swap_chain_.info().info.imageExtent;
         const auto old_image_view_size = image_views_.size();
         const auto old_image_format = swap_chain_.info().info.imageFormat;
-        bool re_generate_render_info = false;
         {
-            int width = 0, height = 0;
-            while((width | height) == 0)
+            int window_width = 0, window_height = 0;
+            while((window_width | window_height) == 0)
             {
-                glfwGetFramebufferSize(window_, &width, &height);
+                glfwGetFramebufferSize(window_, &window_width, &window_height);
                 glfwWaitEvents();
             }
         }
 
-        device_->waitIdle();
+        device_->waitIdle(device_.dispatch());
 
-        for(auto& buffer : frame_buffers_)
-            buffer = nullptr;
+        for(auto& frame_buffer : frame_buffers_)
+            frame_buffer = nullptr;
 
         for(auto& view : image_views_)
             view = nullptr;
@@ -743,18 +835,16 @@ namespace vulkan
 
         if(swap_chain_.info().info.imageFormat != old_image_format)
         {
-            render_pass_ = nullptr;
             generate_render_pass_create_info();
             render_pass_.initialize(device_);
         }
 
         generate_framebuffer_create_infos();
-        for(auto& fb : frame_buffers_)
-            fb.initialize(device_);
+        for(auto& frame_buffer : frame_buffers_)
+            frame_buffer.initialize(device_);
 
         if(image_views_.size() != old_image_view_size)
         {
-            descriptor_pool_.element_objects_reset(device_, descriptor_sets_);
             generate_descriptor_pool_create_info();
             descriptor_pool_.initialize(device_);
 
@@ -764,32 +854,24 @@ namespace vulkan
                 descriptor_sets_.front().info().info
             );
 
-            pipeline_layout_ = nullptr;
             generate_pipeline_layout_create_info();
             pipeline_layout_.initialize(device_);
 
-            graphics_command_pool_.element_objects_reset(device_, graphics_command_buffers_);
             generate_graphics_command_buffer_allocate_info();
             graphics_command_buffers_ = graphics_command_pool_.create_element_objects(
                 device_,
                 graphics_command_buffers_
                 .front().info()
             );
-
-            re_generate_render_info = true;
         }
 
         if(swap_chain_.info().info.imageExtent != old_extent)
         {
-            graphics_pipeline_ = nullptr;
             generate_graphics_pipeline_create_info();
             graphics_pipeline_.initialize(device_);
-
-            re_generate_render_info = true;
         }
 
-        if(re_generate_render_info)
-            generate_render_info();
+        generate_render_info();
     }
 
     void vulkan_sample::glfw_cleanup() noexcept
@@ -852,5 +934,11 @@ namespace vulkan
     void vulkan_sample::set_indices(decltype(transfer_memory_)::value_type<uint32_t> indices)
     {
         transfer_memory_.write<uint32_t>(std::move(indices));
+    }
+
+    void vulkan_sample::set_image(decltype(texture_image_) image)
+    {
+        texture_image_ = std::move(image);
+        write(image_buffer_memory_, device_, texture_image_);
     }
 }

@@ -207,6 +207,19 @@ namespace vulkan::utility
             null_opt<const AllocationCallbacks>, dispatch);
     }
 
+    template<>
+    auto object<Image>::create_unique_handle(
+        const owner_type& owner,
+        const dispatch_type& dispatch,
+        const base_info_type& info,
+        const optional<AllocationCallbacks>& allocator
+    ) -> base::base
+    {
+        return owner.createImageUnique(info, allocator ?
+            *allocator :
+            null_opt<const AllocationCallbacks>, dispatch);
+    }
+
     auto object<GraphicsPipeline>::create_unique_handle(
         const owner_type& owner,
         const dispatch_type& dispatch,

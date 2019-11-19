@@ -53,6 +53,7 @@ namespace vulkan::utility::stb
 
 		auto width() const;
 		auto height() const;
+		auto pixel_size() const;
 		auto real_channel() const;
 
 		auto cbegin() const;

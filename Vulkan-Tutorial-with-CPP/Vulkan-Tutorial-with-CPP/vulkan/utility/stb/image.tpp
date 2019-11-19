@@ -23,7 +23,7 @@ namespace vulkan::utility::stb
 		for(size_type i = 0; i < width; ++i)
 			for(size_type j = 0; j < height; ++j)
 				for(size_type k = 0; k < pixel_t::length(); ++k)
-					pixels_[i][j][static_cast<length_t>(k)] = stb_uc_ptr[i * height + j * pixel_t::length() + k];
+					pixels_[i][j][static_cast<length_t>(k)] = std::byte{stb_uc_ptr[i * height + j * pixel_t::length() + k]};
 	}
 
 	template<channel Channel>
@@ -101,6 +101,9 @@ namespace vulkan::utility::stb
 	auto image<Channel>::height() const { return width() != 0 ? pixels_[0].size() : 0; }
 
 	template<channel Channel>
+	auto image<Channel>::pixel_size() const { return width() * height(); }
+
+	template<channel Channel>
 	auto image<Channel>::real_channel() const { return real_channel_type_; }
 
 	template<channel Channel>
@@ -139,6 +142,7 @@ namespace vulkan::utility::stb
 			0
 		);
 		break;
+
 		case image_format::jpg:
 		stbi_write_jpg(
 			save_path.generic_u8string().c_str(),
@@ -149,6 +153,7 @@ namespace vulkan::utility::stb
 			quality
 		);
 		break;
+
 		case image_format::bmp:
 		stbi_write_bmp(
 			save_path.generic_u8string().c_str(),
@@ -158,6 +163,7 @@ namespace vulkan::utility::stb
 			stb_vec.data()
 		);
 		break;
+
 		default: break;
 		}
 	}

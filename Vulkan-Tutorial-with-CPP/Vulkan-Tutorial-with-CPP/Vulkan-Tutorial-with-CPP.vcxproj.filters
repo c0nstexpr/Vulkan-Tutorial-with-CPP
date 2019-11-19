@@ -93,6 +93,9 @@
     <ClCompile Include="vulkan\utility\utility_core.cpp">
       <Filter>头文件\vulkan\utility</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan\utility\obejct\image.cpp">
+      <Filter>源文件\vulkan\utility\object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resource\shaders\shader.vert">
@@ -121,6 +124,9 @@
     </None>
     <None Include="vulkan_sample.tpp">
       <Filter>头文件</Filter>
+    </None>
+    <None Include="vulkan\utility\constant\constant.tpp">
+      <Filter>头文件\vulkan\utility\constant</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -174,6 +180,9 @@
     </ClInclude>
     <ClInclude Include="vulkan\utility\utility_core.h">
       <Filter>头文件\vulkan\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\obejct\image.h">
+      <Filter>头文件\vulkan\utility\object</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

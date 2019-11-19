@@ -468,8 +468,8 @@ namespace vulkan::utility
 			subpass_descriptions_info_proxies_.cbegin(),
 			subpass_descriptions_info_proxies_.cend(),
 			subpass_descriptions_.begin(),
-			[](decltype(*subpass_descriptions_info_proxies_.cbegin()) info)	->
-			decltype(subpass_descriptions_)::value_type{return info; }
+			[](decltype(*subpass_descriptions_info_proxies_.cbegin()) subpass_info_proxy)	->
+			decltype(subpass_descriptions_)::value_type{return subpass_info_proxy;}
 		);
 		info.pSubpasses = subpass_descriptions_.size() != 0 ? subpass_descriptions_.data() : nullptr;
 		info.subpassCount = static_cast<uint32_t>(subpass_descriptions_.size());
@@ -921,7 +921,7 @@ namespace vulkan::utility
 	void info_proxy<graphics_pipeline_create_info>::property_move(base&& right) const noexcept
 	{
 		decltype(auto) d_right = static_cast<info_proxy&&>(right);
-		stages_info_proxies_property = std::move(d_right.stages_info_proxies_);
+		stages_info_proxies_property = std::move(d_right.stage_info_proxies_);
 		vertex_input_state_property = std::move(d_right.vertex_input_state_);
 		input_assembly_state_property = std::move(d_right.input_assembly_state_);
 		tessellation_state_property = std::move(d_right.tessellation_state_);
@@ -934,7 +934,7 @@ namespace vulkan::utility
 	}
 
 	info_proxy<graphics_pipeline_create_info>::info_proxy(
-		decltype(stages_info_proxies_) stages_info_proxies,
+		decltype(stage_info_proxies_) stages_info_proxies,
 		decltype(vertex_input_state_) vertex_input_state,
 		decltype(input_assembly_state_) input_assembly_state,
 		decltype(tessellation_state_) tessellation_state,
@@ -974,20 +974,20 @@ namespace vulkan::utility
 	)
 	{}
 
-	auto info_proxy<graphics_pipeline_create_info>::get_stages_info_proxies() const ->
-		const decltype(stages_info_proxies_)& { return stages_info_proxies_; }
+	auto info_proxy<graphics_pipeline_create_info>::get_stage_info_proxies() const ->
+		const decltype(stage_info_proxies_)& { return stage_info_proxies_; }
 
-	void info_proxy<graphics_pipeline_create_info>::set_stages_info_proxies(
-		decltype(stages_info_proxies_) value
+	void info_proxy<graphics_pipeline_create_info>::set_stage_info_proxies(
+		decltype(stage_info_proxies_) value
 	)
 	{
-		stages_info_proxies_ = std::move(value);
-		stages_.resize(stages_info_proxies_.size());
+		stage_info_proxies_ = std::move(value);
+		stages_.resize(stage_info_proxies_.size());
 		std::transform(
-			stages_info_proxies_.cbegin(),
-			stages_info_proxies_.cend(),
+			stage_info_proxies_.cbegin(),
+			stage_info_proxies_.cend(),
 			stages_.begin(),
-			[](decltype(*stages_info_proxies_.cbegin()) info) -> decltype(stages_)::value_type{return info;}
+			[](decltype(*stage_info_proxies_.cbegin()) stages_info_proxy) -> decltype(stages_)::value_type{return stages_info_proxy; }
 		);
 		info.pStages = stages_.size() != 0 ? stages_.data() : nullptr;
 		info.stageCount = static_cast<uint32_t>(stages_.size());
@@ -1239,7 +1239,7 @@ namespace vulkan::utility
 			bindings_proxies_.cbegin(),
 			bindings_proxies_.cend(),
 			bindings_.begin(),
-			[](decltype(*bindings_proxies_.cbegin()) binding) -> decltype(bindings_)::value_type{return binding; }
+			[](decltype(*bindings_proxies_.cbegin()) binding) -> decltype(bindings_)::value_type{return binding;}
 		);
 		info.pBindings = bindings_proxies_.size() != 0 ? bindings_.data() : nullptr;
 		info.bindingCount = static_cast<decltype(info.bindingCount)>(bindings_proxies_.size());

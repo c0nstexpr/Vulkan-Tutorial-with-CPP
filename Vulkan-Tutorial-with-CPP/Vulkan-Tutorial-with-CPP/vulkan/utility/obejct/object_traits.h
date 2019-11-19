@@ -5,7 +5,7 @@
 namespace vk
 {
     // ReSharper disable once CppInconsistentNaming
-    using GraphicsPipeline = vulkan::utility::GraphicsPipeline;
+    using GraphicsPipeline = vulkan::GraphicsPipeline;
 
     template<typename Dispatch>
     class UniqueHandleTraits<GraphicsPipeline, Dispatch> : public UniqueHandleTraits<Pipeline, Dispatch>

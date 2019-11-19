@@ -3,7 +3,7 @@
 namespace vulkan
 {
 	template<typename T>
-	bool vulkan_sample::render(const T& t)
+	bool vulkan_sample::render([[maybe_unused]] const T& t)
 	{
 		static auto&& last_time = time::steady_clock_timer().time_since_epoch();
 
@@ -24,24 +24,27 @@ namespace vulkan
 			return false;
 		glfwPollEvents();
 
+		const auto& swap_chain_image_syn = *swap_chain_image_syn_[frame_count_ % swap_chain_image_syn_.size()];
+		const auto index = device_->acquireNextImageKHR(
+			*swap_chain_,
+			numberic_max<std::uint64_t>,
+			swap_chain_image_syn,
+			nullptr,
+			device_.dispatch()
+		).value;
+
 		try
 		{
-			const auto& swap_chain_image_syn = *swap_chain_image_syn_[frame_count_ % swap_chain_image_syn_.size()];
-			const auto index = device_->acquireNextImageKHR(
-				*swap_chain_,
-				-1,
-				swap_chain_image_syn,
-				nullptr,
-				device_.dispatch()
-			).value;
-
 			if constexpr(!std::is_same_v<T, empty_type>)
 				t(index);
 
-			submit_infos_[index].wait_semaphores_property = {swap_chain_image_syn};
+			submit_infos_[index].wait_semaphores_property = vector<Semaphore>{swap_chain_image_syn};
 
-			device_->waitForFences({*gpu_syn_[index]}, true, numberic_max<uint64_t>, device_.dispatch());
-			device_->resetFences({*gpu_syn_[index]}, device_.dispatch());
+			if(device_->getFenceStatus(*gpu_syn_[index], device_.dispatch()) == Result::eSuccess)
+			{
+				device_->waitForFences({*gpu_syn_[index]}, true, numberic_max<uint64_t>, device_.dispatch());
+				device_->resetFences({*gpu_syn_[index]}, device_.dispatch());
+			}
 
 			graphics_queue_.submit({submit_infos_[index]}, *gpu_syn_[index], device_.dispatch());
 

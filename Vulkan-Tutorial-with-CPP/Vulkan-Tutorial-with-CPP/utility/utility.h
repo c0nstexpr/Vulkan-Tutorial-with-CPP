@@ -105,7 +105,10 @@ namespace utility
     T container_transform(U&&);
 
     template<typename UnaryOp, typename InputFirst, typename... InputRest>
-    constexpr void for_each(const UnaryOp, InputFirst, const InputFirst, InputRest...);
+    constexpr void for_each(const UnaryOp&, InputFirst, const InputFirst, InputRest...);
+
+    template<typename UnaryOp, typename InputFirst, typename... InputRest>
+    constexpr void for_each(const UnaryOp&, InputFirst&, InputRest&...);
 
     template<typename T = float>
     constexpr auto to_radian(const T);

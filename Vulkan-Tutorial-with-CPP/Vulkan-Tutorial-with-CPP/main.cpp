@@ -12,7 +12,7 @@ int main()
     {
         vulkan_sample sample;
         sample.initialize();
-        while(sample.render([&sample](const auto index)
+        while(sample.render([&sample](const auto)
             {
                 const auto time = duration_cast<milliseconds>(
                     time::steady_clock_timer().time_since_epoch()

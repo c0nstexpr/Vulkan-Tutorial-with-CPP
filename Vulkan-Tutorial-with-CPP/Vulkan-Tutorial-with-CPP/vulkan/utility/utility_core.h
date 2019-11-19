@@ -8,5 +8,14 @@
 
 namespace vulkan
 {
-    PFN_vkVoidFunction get_instance_proc_addr(const VkInstance, const char*) noexcept;
+	using namespace vk;
+	using namespace utility;
+
+	// ReSharper disable CppInconsistentNaming
+	struct GraphicsPipeline : Pipeline { using base = Pipeline; using base::base; };
+	struct ComputePipeline : Pipeline { using base = Pipeline; using base::base; };
+
+	// ReSharper restore CppInconsistentNaming
+
+	PFN_vkVoidFunction get_instance_proc_addr(const VkInstance, const char*) noexcept;
 }

@@ -1,12 +1,11 @@
 ﻿#pragma once
-#include "utility/utility.tpp"
 
 namespace vulkan::utility
 {
     template<typename Input>
     void write(
-        const device_memory& memory_object,
-        const device& device,
+        const device_memory_object& memory_object,
+        const device_object& device,
         const Input data_begin,
         const Input data_end,
         const DeviceSize offset
@@ -30,7 +29,12 @@ namespace vulkan::utility
     }
 
     template<typename T>
-    void write(const device_memory& memory_object, const device& device, const T& data, const DeviceSize offset)
+    void write(
+        const device_memory_object& memory_object,
+        const device_object& device,
+        const T& data,
+        const DeviceSize offset
+    )
     {
         write(memory_object, device, &data, &data + 1, offset);
     }
@@ -42,7 +46,7 @@ namespace vulkan::utility
     )
     {
         //ReSharper disable CppEntityAssignedButNoRead
-//for_each change the element content
+        //for_each change the element content
         ::utility::for_each(
             [&usages](
                 decltype(*device_local_buffers_.begin()) local_buffer,
@@ -50,19 +54,19 @@ namespace vulkan::utility
                 // ReSharper disable CppEntityAssignedButNoRead
                 decltype(*host_buffers_.begin()) host_buffer,
                 decltype(*usages.cbegin()) usage,
-                decltype(*type_sizes.cbegin()) type_size,
+                decltype(*required_sizes_.cbegin()) type_size,
                 decltype(*counts.cbegin()) count
                 )
             {
                 const size_t memory_size = type_size * count;
-                local_buffer = buffer{{{{}, memory_size, usage | BufferUsageFlagBits::eTransferDst}}};
-                host_buffer = buffer{{{{}, memory_size, BufferUsageFlagBits::eTransferSrc}}};
+                local_buffer = buffer_object{{{{}, memory_size, usage | BufferUsageFlagBits::eTransferDst}}};
+                host_buffer = buffer_object{{{{}, memory_size, BufferUsageFlagBits::eTransferSrc}}};
             },
             device_local_buffers_.begin(),
                 device_local_buffers_.end(),
                 host_buffers_.begin(),
                 usages.cbegin(),
-                type_sizes.cbegin(),
+                required_sizes_.cbegin(),
                 counts.cbegin()
                 );
 
@@ -126,39 +130,49 @@ namespace vulkan::utility
 
     template<bool Cached, typename... Types>
     template<size_t... Counts>
-    template<typename T>
-    void memory<Cached, Types...>::array_values<Counts...>::write_impl(value_type<T> values)
+    template<typename T, typename Op>
+    void memory<Cached, Types...>::array_values<Counts...>::write_impl(value_type<T> value, [[maybe_unused]] const Op& op)
     {
-        if constexpr(std::is_same_v<value_type<T>, T>)
-            utility::write(host_memory_, *device_, values, type_offsets_[type_index<T>]);
-        else
-            utility::write(host_memory_, *device_, values.cbegin(), values.cend(), type_offsets_[type_index<T>]);
-        std::get<decltype(values)>(type_values_) = std::move(values);
+        if(host_memory_)
+            if constexpr(std::is_same_v<Op, empty_type>)
+                utility::write(
+                    host_memory_,
+                    *device_,
+                    value.cbegin(),
+                    value.cend(),
+                    type_offsets_[type_index<T>]
+                );
+            else
+                for(const auto& element : value)
+                {
+                    const auto& [cbegin, cend] = op(element);
+                    utility::write(host_memory_, *device_, cbegin, cend, type_offsets_[type_index<T>]);
+                }
+        std::get<decltype(value)>(type_values_) = std::move(value);
     }
 
     template<bool Cached, typename... Types>
     template<size_t... Counts>
-    memory<Cached, Types...>::array_values<Counts...>::array_values(const device& device) :
-        device_(&device)
-    {}
-
-    template<bool Cached, typename... Types>
-    template<size_t... Counts>
     memory<Cached, Types...>::array_values<Counts...>::array_values(
-        const device& device,
-        const array<BufferUsageFlags, type_list::size>& usages
-    ) : array_values(device)
+        const device_object& device,
+        const array<BufferUsageFlags, type_list::size>& usages,
+        const initializer_list<pair<size_t, size_t>> require_size_modify_pairs
+    ) : device_(&device)
     {
+        for(const auto& pair : require_size_modify_pairs)
+            required_sizes_[pair.first] = pair.second;
+
         generate_buffer_info(usages);
     }
 
     template<bool Cached, typename... Types>
     template<size_t... Counts>
     memory<Cached, Types...>::array_values<Counts...>::array_values(
-        const device& device,
+        const PhysicalDevice& physical_device,
+        const device_object& device,
         const array<BufferUsageFlags, type_list::size>& usages,
-        const PhysicalDevice& physical_device
-    ) : array_values(device, usages)
+        const initializer_list<pair<size_t, size_t>> require_size_modify_pairs
+    ) : array_values(device, usages, require_size_modify_pairs)
     {
         initialize(physical_device);
     }
@@ -189,18 +203,21 @@ namespace vulkan::utility
         bind_buffer_memory();
     }
 
-    /* unable to separate the definition and deceleration
-    template<bool Cached, typename... Types>
+    template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    template<typename... T>
-    void memory<Cached, Types...>::array_values<Counts...>::write(
-        std::tuple_element_t<type_index<T>, decltype(type_values_)>... values
-    )
+    template<typename ... T>
+    void memory<Cached, Types...>::array_values<Counts...>::write(value_type<T> ... values)
     {
-        (write(host_memory_, device_, values.cbegin(), values.cend(), type_offsets_[type_index<T>]), ...);
-        ((std::get<decltype(values)>(type_values_) = std::move(values)), ...);
+        (write_impl<T>(std::move(values), empty_type{}), ...);
     }
-    */
+
+    template<bool Cached, typename ... Types>
+    template<size_t... Counts>
+    template<typename T, typename Op>
+    void memory<Cached, Types...>::array_values<Counts...>::write(value_type<T> value, const Op& op)
+    {
+        write_impl<T>(value, op);
+    }
 
     template<bool Cached, typename... Types>
     template<size_t... Counts>
@@ -224,14 +241,14 @@ namespace vulkan::utility
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    void memory<Cached, Types...>::array_values<Counts...>::write_transfer_command(const command_buffer& command_buffer) const
+    void memory<Cached, Types...>::array_values<Counts...>::write_transfer_command(const CommandBuffer& command_buffer) const
     {
         ::utility::for_each([dispatch = device_->dispatch(), &command_buffer](
             decltype(*device_local_buffers_.cbegin()) device_local_buffer,
             decltype(*host_buffers_.cbegin()) host_buffer
             )
         {
-            command_buffer->copyBuffer(
+            command_buffer.copyBuffer(
                 *host_buffer,
                 *device_local_buffer,
                 {{0, 0, host_buffer.info().info.size}},

@@ -65,10 +65,16 @@ namespace utility
 	}
 
 	template<typename UnaryOp, typename InputFirst, typename... InputRest>
-	constexpr void for_each(const UnaryOp op, InputFirst begin, const InputFirst end, InputRest... rest)
+	constexpr void for_each(const UnaryOp& op, InputFirst begin, const InputFirst end, InputRest... rest)
 	{
 		while(begin != end)
 			op(*begin++, *rest++...);
+	}
+
+	template<typename UnaryOp, typename InputFirst, typename... InputRest>
+	constexpr void for_each(const UnaryOp& op, InputFirst& first_range, InputRest&... rest_range)
+	{
+		for_each(op, first_range.begin(), first_range.end(), rest_range.begin()...);
 	}
 
 	constexpr long double operator"" _deg(const long double deg) { return to_radian(deg); }
