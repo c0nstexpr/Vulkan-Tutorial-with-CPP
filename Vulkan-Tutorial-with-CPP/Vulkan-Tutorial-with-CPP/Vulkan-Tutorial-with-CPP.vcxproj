@@ -191,6 +191,7 @@
     <None Include="utility\property.tpp" />
     <None Include="utility\utility.tpp" />
     <None Include="vulkan\utility\constant\constant.tpp" />
+    <None Include="vulkan\utility\info\info.tpp" />
     <None Include="vulkan\utility\obejct\memory.tpp" />
     <None Include="vulkan\utility\obejct\object.tpp" />
     <None Include="vulkan\utility\obejct\object_traits.tpp" />

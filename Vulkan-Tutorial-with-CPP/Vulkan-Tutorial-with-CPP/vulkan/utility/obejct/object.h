@@ -55,15 +55,15 @@ namespace vulkan::utility
         handle_type physical_device_;
 
     public:
-        object(std::nullptr_t = {});
+        constexpr object(std::nullptr_t = {}) noexcept;
 
         template<typename T>
-        object(const Instance&, const T&);
+        constexpr object(const Instance&, const T&) noexcept(std::is_nothrow_invocable_v<T, PhysicalDevice>);
 
-        handle_type& operator*();
-        const handle_type& operator*() const;
-        handle_type* operator->();
-        const handle_type* operator->() const;
+        constexpr handle_type& operator*() noexcept;
+        constexpr const handle_type& operator*() const noexcept;
+        constexpr handle_type* operator->() noexcept;
+        constexpr const handle_type* operator->() const noexcept;
     };
 
     template<>
@@ -82,7 +82,7 @@ namespace vulkan::utility
 
         void initialize(const optional<AllocationCallbacks> & = nullopt);
 
-        const DispatchLoaderDynamic& dispatch() const;
+        constexpr const DispatchLoaderDynamic& dispatch() const noexcept;
     };
 
     template<>
@@ -102,7 +102,7 @@ namespace vulkan::utility
 
         void initialize(const PhysicalDevice&, const DispatchLoaderDynamic&, const optional<AllocationCallbacks> & = nullopt);
 
-        const DispatchLoaderDynamic& dispatch() const;
+        constexpr const DispatchLoaderDynamic& dispatch() const noexcept;
     };
 
     template<typename HandleType>
@@ -156,6 +156,7 @@ namespace vulkan::utility
     using shader_module_object = object<ShaderModule>;
     using buffer_object = object<Buffer>;
     using image_object = object<Image>;
+    using sampler_object = object<Sampler>;
     using descriptor_set_layout_object = object<DescriptorSetLayout>;
     using descriptor_pool_object = pool_object<DescriptorPool>;
     using descriptor_set_object = object<DescriptorSet>;
@@ -167,13 +168,46 @@ namespace vulkan::utility
     using semaphore_object = object<Semaphore>;
     using fence_object = object<Fence>;
 
-    struct vertex
+    struct vertex_base
     {
         vec2 pos;
         vec3 color;
+        vec2 texture;
+    };
 
-        static const VertexInputBindingDescription description;
-        static const array<VertexInputAttributeDescription, 2> attribute_descriptions;
+    struct vertex : vertex_base
+    {
+        using base = vertex_base;
+        using base::base;
+
+        constexpr vertex(const vec2, const vec3, const vec2) noexcept;
+
+        static constexpr VertexInputBindingDescription description{
+            0,
+            sizeof(vertex_base),
+            VertexInputRate::eVertex
+        };
+
+        static constexpr array<VertexInputAttributeDescription, 3> attribute_descriptions{
+            VertexInputAttributeDescription{
+            0,
+            0,
+            constant::format<decltype(pos)>,
+            static_cast<uint32_t>(MEMBER_OFFSET(base, pos))
+        },
+            VertexInputAttributeDescription{
+            1,
+            0,
+            constant::format<decltype(color)>,
+            static_cast<uint32_t>(MEMBER_OFFSET(base, color))
+        },
+            VertexInputAttributeDescription{
+            2,
+            0,
+            constant::format<decltype(texture)>,
+            static_cast<uint32_t>(MEMBER_OFFSET(base, texture))
+        }
+        };
     };
 }
 

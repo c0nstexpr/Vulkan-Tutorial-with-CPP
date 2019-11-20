@@ -22,10 +22,10 @@ namespace utility
 	public:
 		property(class_type&, const getter_type, const setter_type);
 
-		value_type_const_reference operator()() const;
-		operator value_type_const_reference() const;
+		constexpr value_type_const_reference operator()() const;
+		constexpr operator value_type_const_reference() const;
 
-		const property& operator=(value_type right) const;
+		constexpr const property& operator=(value_type right) const;
 
 		const getter_type getter;
 		const setter_type setter;

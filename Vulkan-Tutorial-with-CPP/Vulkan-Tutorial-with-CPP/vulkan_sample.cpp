@@ -1,4 +1,5 @@
 ﻿#include "vulkan_sample.h"
+#include "vulkan/utility/stb/image.h"
 
 namespace vulkan
 {
@@ -66,7 +67,7 @@ namespace vulkan
         }
         if(!is_included(
             ext_names,
-            enumerateInstanceExtensionProperties(null_opt<const std::string>, DispatchLoaderStatic{}),
+            enumerateInstanceExtensionProperties(nullptr, DispatchLoaderStatic{}),
             [](const auto& layer, const auto& p)->bool { return layer == p.extensionName; }))
             throw std::runtime_error("requested instance extension is not available!");
 
@@ -110,16 +111,16 @@ namespace vulkan
         using device_info_type = device_type::info_type;
         using set_type = decay_to_origin_t<decltype(device_.info().queue_create_infos_set_property())>;
 
-        device_ = device_type{device_info_type{
-            {
+        PhysicalDeviceFeatures features;
+        features.samplerAnisotropy = true;
+
+        device_ = device_type{device_info_type{{
                 info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}},
                 info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
-            },
-            vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME}}
-        };
+            }, vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME}, features}};
         if(!is_included(
             device_.info().extension_name_strs_property(),
-            physical_device_->enumerateDeviceExtensionProperties(null_opt<const std::string>, DispatchLoaderStatic{}),
+            physical_device_->enumerateDeviceExtensionProperties(nullptr, DispatchLoaderStatic{}),
             [](const auto& layer, const auto& p)->bool { return layer == p.extensionName; }
         ))
             throw std::runtime_error("requested device extension is not available!");
@@ -339,8 +340,21 @@ namespace vulkan
         using descriptor_set_layout_type = decltype(descriptor_set_layout_);
         using descriptor_set_layout_info_type = descriptor_set_layout_type::info_type;
 
-        descriptor_set_layout_ = descriptor_set_layout_type{descriptor_set_layout_info_type{
-            {DescriptorSetLayoutBinding{0, DescriptorType::eUniformBuffer, 1, ShaderStageFlagBits::eVertex}}
+        descriptor_set_layout_ = descriptor_set_layout_type{info_proxy<DescriptorSetLayoutCreateInfo>{
+            {
+                DescriptorSetLayoutBinding{
+                    0,
+                    DescriptorType::eUniformBuffer,
+                    1,
+                    ShaderStageFlagBits::eVertex
+                },
+                    DescriptorSetLayoutBinding{
+                    1,
+                    DescriptorType::eCombinedImageSampler,
+                    1,
+                    ShaderStageFlagBits::eFragment
+                }
+            }
         }};
     }
 
@@ -349,10 +363,10 @@ namespace vulkan
         using descriptor_pool_type = decltype(descriptor_pool_);
         using descriptor_pool_info_type = descriptor_pool_type::info_type;
 
-        descriptor_pool_ = descriptor_pool_type{descriptor_pool_info_type{{{
-                DescriptorType::eUniformBuffer,
-                static_cast<uint32_t>(image_views_.size())
-            }}, {DescriptorPoolCreateFlagBits::eFreeDescriptorSet}}};
+        descriptor_pool_ = descriptor_pool_type{descriptor_pool_info_type{vector<DescriptorPoolSize>{
+            { DescriptorType::eUniformBuffer, static_cast<uint32_t>(image_views_.size()) },
+            {DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(image_views_.size())}
+        }, {DescriptorPoolCreateFlagBits::eFreeDescriptorSet}}};
     }
 
     void vulkan_sample::generate_descriptor_set_allocate_info()
@@ -511,25 +525,26 @@ namespace vulkan
                 }};
     }
 
-    void vulkan_sample::generate_image_create_info()
+    void vulkan_sample::generate_texture_image_create_info()
     {
-        using image_type = decltype(image_);
+        using image_type = decltype(texture_image_);
         using image_info_type = image_type::info_type;
 
-        texture_image_ = stb::image<channel::rgb_alpha>{"freshman.jpg"};
-        image_buffer_ = buffer_object{
-            BufferCreateInfo{{},
-            texture_image_.pixel_size() * sizeof(decltype(texture_image_)::pixel_t),
-            BufferUsageFlagBits::eTransferSrc}
-        };
+        texture_image_src_ = stb::image<channel::rgb_alpha>{"freshman.jpg"};
 
-        image_ = image_type{image_info_type::base_info_type{
+        image_buffer_ = buffer_object{BufferCreateInfo{
+            {},
+            texture_image_src_.pixel_size() * sizeof(decltype(texture_image_src_)::pixel_t),
+            BufferUsageFlagBits::eTransferSrc
+        }};
+
+        texture_image_ = image_type{image_info_type::base_info_type{
             {},
             ImageType::e2D,
             Format::eR8G8B8A8Unorm,
             Extent3D{
-            static_cast<uint32_t>(texture_image_.width()),
-            static_cast<uint32_t>(texture_image_.height()),
+            static_cast<uint32_t>(texture_image_src_.width()),
+            static_cast<uint32_t>(texture_image_src_.height()),
             1
         },
             1,
@@ -538,6 +553,31 @@ namespace vulkan
             ImageTiling::eOptimal,
             ImageUsageFlagBits::eTransferDst | ImageUsageFlagBits::eSampled,
         }};
+    }
+
+    void vulkan_sample::generate_texture_image_view_create_info()
+    {
+        auto info = image_views_.front().info();
+        info.image = *texture_image_;
+        info.format = texture_image_.info().info.format;
+
+        texture_image_view_ = image_view_object{std::move(info)};
+    }
+
+    void vulkan_sample::generate_texture_sampler_create_info()
+    {
+        using sampler_type = decltype(texture_sampler_);
+        using sampler_info_type = sampler_type::info_type;
+
+        sampler_info_type info;
+        info.magFilter = info.minFilter = Filter::eLinear;
+        info.mipmapMode = SamplerMipmapMode::eLinear;
+        info.anisotropyEnable = true;
+        info.maxAnisotropy = 16;
+        info.compareOp = CompareOp::eAlways;
+        info.borderColor = BorderColor::eIntOpaqueBlack;
+
+        texture_sampler_ = sampler_type{std::move(info)};
     }
 
     void vulkan_sample::generate_sync_objects_create_info()
@@ -571,23 +611,23 @@ namespace vulkan
 
         transition_image_layout(
             front_command_buffer,
-            *image_,
+            *texture_image_,
             ImageLayout::eUndefined,
             ImageLayout::eTransferDstOptimal,
             device_.dispatch()
         );
         front_command_buffer.copyBufferToImage(
             *image_buffer_,
-            *image_,
+            *texture_image_,
             ImageLayout::eTransferDstOptimal,
             {BufferImageCopy{
-                0, 0, 0, {ImageAspectFlagBits::eColor, 0, 0, 1}, {0, 0, 0}, image_.info().info.extent
+                0, 0, 0, {ImageAspectFlagBits::eColor, 0, 0, 1}, {0, 0, 0}, texture_image_.info().info.extent
             }},
             device_.dispatch()
         );
         transition_image_layout(
             front_command_buffer,
-            *image_,
+            *texture_image_,
             ImageLayout::eTransferDstOptimal,
             ImageLayout::eShaderReadOnlyOptimal,
             device_.dispatch()
@@ -604,15 +644,20 @@ namespace vulkan
         submit_infos_.resize(graphics_command_buffers_.size());
         present_infos_.resize(submit_infos_.size());
 
+        submit_precondition_command();
+
         for(const auto& descriptor_set : descriptor_sets_)
             device_->updateDescriptorSets({info_proxy<WriteDescriptorSet>{
                 {},
                 {{*transform_buffer_, 0, whole_size<decltype(DescriptorBufferInfo::range)>}},
                 {},
                 {*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
+        }, info_proxy<WriteDescriptorSet>{
+            { DescriptorImageInfo{*texture_sampler_, *texture_image_view_, ImageLayout::eShaderReadOnlyOptimal} },
+            {},
+            {},
+            {*descriptor_set, 1, 0, 1, DescriptorType::eCombinedImageSampler}
         }}, {}, device_.dispatch());
-
-        submit_precondition_command();
 
         command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
         graphics_queue_.waitIdle(device_.dispatch());
@@ -670,74 +715,97 @@ namespace vulkan
         );
     }
 
-    VkBool32 vulkan_sample::debug_callback(
-        const VkDebugUtilsMessageSeverityFlagBitsEXT flag_bits,
-        const VkDebugUtilsMessageTypeFlagsEXT type_flags,
-        const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
-        void*)
-    {
-        const auto flag = DebugUtilsMessageSeverityFlagBitsEXT{flag_bits};
-        std::cerr << to_string(flag) << '\n' <<
-            to_string(DebugUtilsMessageTypeFlagsEXT{type_flags}) << '\n' <<
-            "validation layer: " << p_callback_data->pMessage << '\n';
-
-        return flag == DebugUtilsMessageSeverityFlagBitsEXT::eError ? true : false;
-    }
-
-    void vulkan_sample::initialize_vulkan()
+    void vulkan_sample::initialize_instance()
     {
         generate_instance_create_info();
         instance_.initialize();
+    }
+
+    void vulkan_sample::initialize_debug_messenger()
+    {
         if constexpr(is_debug)
             debug_messenger_.initialize(instance_);
+    }
 
+    void vulkan_sample::initialize_surface()
+    {
         generate_surface_create_info();
         surface_.initialize(instance_);
+    }
 
-        physical_device_ = {*instance_, [this](const auto& d) { return generate_physical_device(d); }};
-
+    void vulkan_sample::initialize_device()
+    {
         generate_device_create_info();
         device_.initialize(*physical_device_, instance_.dispatch());
+    }
 
+    void vulkan_sample::initialize_queue()
+    {
         graphics_queue_ = device_->getQueue(graphics_queue_index_, 0, device_.dispatch());
         present_queue_ = device_->getQueue(present_queue_index_, 0, device_.dispatch());
+    }
 
+    void vulkan_sample::initialize_swap_chain()
+    {
         generate_swap_chain_create_info();
         swap_chain_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_image_views()
+    {
         generate_image_view_create_infos();
         for(auto& view : image_views_)
             view.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_render_pass()
+    {
         generate_render_pass_create_info();
         render_pass_.initialize(device_);
+    }
 
-        generate_framebuffer_create_infos();
-        for(auto& fb : frame_buffers_)
-            fb.initialize(device_);
-
+    void vulkan_sample::initialize_shader_module()
+    {
         generate_shader_module_create_infos();
         vertex_shader_module_.initialize(device_);
         fragment_shader_module_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_descriptor_set_layout()
+    {
         generate_descriptor_set_layout_create_info();
         descriptor_set_layout_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_descriptor_pool()
+    {
         generate_descriptor_pool_create_info();
         descriptor_pool_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_descriptor_set()
+    {
         generate_descriptor_set_allocate_info();
         descriptor_sets_ = descriptor_pool_.create_element_objects(
             device_,
             descriptor_sets_.front().info().info
         );
+    }
 
+    void vulkan_sample::initialize_pipeline_layout()
+    {
         generate_pipeline_layout_create_info();
         pipeline_layout_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_graphics_pipeline()
+    {
         generate_graphics_pipeline_create_info();
         graphics_pipeline_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_transform_buffer()
+    {
         generate_transform_buffer_create_info();
         transform_buffer_.initialize(device_);
         transform_buffer_memory_ = generate_buffer_memory_info(
@@ -749,28 +817,39 @@ namespace vulkan
         transform_buffer_memory_.initialize(device_);
         device_->bindBufferMemory(*transform_buffer_, *transform_buffer_memory_, 0, device_.dispatch());
         set_transform({mat4{1}});
+    }
 
+    void vulkan_sample::initialize_graphics_command_pool()
+    {
         generate_graphics_command_pool_create_info();
         graphics_command_pool_.initialize(device_);
+    }
 
+    void vulkan_sample::initialize_graphics_command_buffer()
+    {
         generate_graphics_command_buffer_allocate_info();
         graphics_command_buffers_ = graphics_command_pool_.create_element_objects(
             device_,
             graphics_command_buffers_.front().info()
         );
+    }
 
+    void vulkan_sample::initialize_buffer()
+    {
         generate_buffer_allocate_info();
         transfer_memory_.initialize(*physical_device_);
         set_vertices({
-            vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-            vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+            vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+            vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
             });
         set_indices({0, 1, 2, 2, 3, 0});
+    }
 
-        generate_image_create_info();
-        image_.initialize(device_);
+    void vulkan_sample::initialize_texture_image()
+    {
+        generate_texture_image_create_info();
         image_buffer_.initialize(device_);
         image_buffer_memory_ = generate_buffer_memory_info(
             device_,
@@ -780,15 +859,24 @@ namespace vulkan
         ).first;
         image_buffer_memory_.initialize(device_);
         device_->bindBufferMemory(*image_buffer_, *image_buffer_memory_, 0, device_.dispatch());
+
+        texture_image_.initialize(device_);
         image_memory_ = generate_image_memory_info(
             device_,
-            {*image_},
+            {*texture_image_},
             *physical_device_,
             MemoryPropertyFlagBits::eDeviceLocal
         ).first;
         image_memory_.initialize(device_);
-        device_->bindImageMemory(*image_, *image_memory_, 0, device_.dispatch());
+        device_->bindImageMemory(*texture_image_, *image_memory_, 0, device_.dispatch());
 
+        write(image_buffer_memory_, device_, texture_image_src_.cbegin(), texture_image_src_.cend());
+    }
+
+    void vulkan_sample::initialize_sampler() { texture_sampler_.initialize(device_); }
+
+    void vulkan_sample::initialize_sync_objects()
+    {
         generate_sync_objects_create_info();
         for(auto& semaphore : swap_chain_image_syn_)
             semaphore.initialize(device_);
@@ -796,6 +884,69 @@ namespace vulkan
             semaphore.initialize(device_);
         for(auto& fence : gpu_syn_)
             fence.initialize(device_);
+    }
+
+    void vulkan_sample::initialize_frame_buffer()
+    {
+        generate_framebuffer_create_infos();
+        for(auto& fb : frame_buffers_)
+            fb.initialize(device_);
+    }
+
+    void vulkan_sample::initialize_texture_image_view()
+    {
+        generate_texture_image_view_create_info();
+        texture_image_view_.initialize(device_);
+    }
+
+    void vulkan_sample::initialize_vulkan()
+    {
+        initialize_instance();
+        initialize_debug_messenger();
+
+        initialize_surface();
+
+        physical_device_ = {*instance_, [this](const auto& d) { return generate_physical_device(d); }};
+
+        initialize_device();
+
+        initialize_queue();
+
+        initialize_swap_chain();
+
+        initialize_image_views();
+
+        initialize_render_pass();
+
+        initialize_frame_buffer();
+
+        initialize_shader_module();
+
+        initialize_descriptor_set_layout();
+
+        initialize_descriptor_pool();
+
+        initialize_descriptor_set();
+
+        initialize_pipeline_layout();
+
+        initialize_graphics_pipeline();
+
+        initialize_transform_buffer();
+
+        initialize_graphics_command_pool();
+
+        initialize_graphics_command_buffer();
+
+        initialize_buffer();
+
+        initialize_texture_image();
+
+        initialize_texture_image_view();
+
+        initialize_sampler();
+
+        initialize_sync_objects();
 
         generate_render_info();
 
@@ -881,6 +1032,20 @@ namespace vulkan
         window_ = nullptr;
     }
 
+    VkBool32 vulkan_sample::debug_callback(
+        const VkDebugUtilsMessageSeverityFlagBitsEXT flag_bits,
+        const VkDebugUtilsMessageTypeFlagsEXT type_flags,
+        const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
+        void*)
+    {
+        const auto flag = DebugUtilsMessageSeverityFlagBitsEXT{flag_bits};
+        std::cerr << to_string(flag) << '\n' <<
+            to_string(DebugUtilsMessageTypeFlagsEXT{type_flags}) << '\n' <<
+            "validation layer: " << p_callback_data->pMessage << '\n';
+
+        return flag == DebugUtilsMessageSeverityFlagBitsEXT::eError ? true : false;
+    }
+
     vulkan_sample::~vulkan_sample()
     {
         glfw_cleanup();
@@ -936,9 +1101,9 @@ namespace vulkan
         transfer_memory_.write<uint32_t>(std::move(indices));
     }
 
-    void vulkan_sample::set_image(decltype(texture_image_) image)
+    void vulkan_sample::set_image(decltype(texture_image_src_) image)
     {
-        texture_image_ = std::move(image);
-        write(image_buffer_memory_, device_, texture_image_);
+        texture_image_src_ = std::move(image);
+        write(image_buffer_memory_, device_, texture_image_src_);
     }
 }

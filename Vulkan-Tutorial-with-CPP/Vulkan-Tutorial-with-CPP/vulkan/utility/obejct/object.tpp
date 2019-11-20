@@ -45,10 +45,21 @@ namespace vulkan::utility
     }
 
     template<typename T>
-    object<PhysicalDevice>::object(const Instance& instance, const T& t)
+    constexpr object<PhysicalDevice>::object(const Instance& instance, const T& t) noexcept(std::is_nothrow_invocable_v<T, PhysicalDevice>)
     {
-        for(const auto& device : instance.enumeratePhysicalDevices(DispatchLoaderStatic{})) if(t(device)) physical_device_ = device;
+        for(const auto& device : instance.enumeratePhysicalDevices(DispatchLoaderStatic{}))
+            if(t(device)) physical_device_ = device;
     }
+
+    constexpr object<PhysicalDevice>::object(std::nullptr_t) noexcept {}
+
+    constexpr auto object<PhysicalDevice>::operator*() noexcept -> handle_type& { return physical_device_; }
+
+    constexpr auto object<PhysicalDevice>::operator*() const noexcept -> const handle_type& { return physical_device_; }
+
+    constexpr auto object<PhysicalDevice>::operator->() noexcept -> handle_type* { return &physical_device_; }
+
+    constexpr auto object<PhysicalDevice>::operator->() const noexcept -> const handle_type* { return &physical_device_; }
 
     template<typename HandleType>
     auto pool_object<HandleType>::create_element_objects(
@@ -96,4 +107,12 @@ namespace vulkan::utility
         }
         else static_assert(true, "target type is incompatible");
     }
+
+    constexpr const DispatchLoaderDynamic& object<Instance>::dispatch() const noexcept { return dispatch_; }
+
+    constexpr const DispatchLoaderDynamic& object<Device>::dispatch() const noexcept { return dispatch_; }
+
+    constexpr vertex::vertex(const vec2 pos, const vec3 color, const vec2 texture) noexcept :
+        base{pos, color, texture}
+    {}
 }

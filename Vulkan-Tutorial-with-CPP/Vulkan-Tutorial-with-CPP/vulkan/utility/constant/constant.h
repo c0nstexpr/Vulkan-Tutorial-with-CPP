@@ -57,7 +57,8 @@ namespace vulkan::utility::constant
 	template<>
 	static constexpr auto index_type<uint8_t> = IndexType::eUint8EXT;
 
-	static constexpr pair<AccessFlagBits, PipelineStageFlagBits> required_access_and_pipeline_stage(const ImageLayout);
+	static constexpr pair<AccessFlagBits, PipelineStageFlagBits>
+		required_access_and_pipeline_stage(const ImageLayout);
 }
 
 #include "constant.tpp"

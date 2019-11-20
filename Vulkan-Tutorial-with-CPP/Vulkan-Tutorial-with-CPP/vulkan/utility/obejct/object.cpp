@@ -10,9 +10,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createDebugUtilsMessengerEXTUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createDebugUtilsMessengerEXTUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -31,11 +29,7 @@ namespace vulkan::utility
         }
         else glfwCreateWindowSurface(owner, info.window, nullptr, &surface_khr);
 
-        return base::base{surface_khr, {
-            owner,
-            allocator ? *allocator : null_opt<const AllocationCallbacks>,
-            dispatch
-        }};
+        return base::base{surface_khr, {owner, allocator ? Optional{*allocator} : nullptr, dispatch}};
     }
 
     template<>
@@ -46,9 +40,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createSwapchainKHRUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createSwapchainKHRUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -59,9 +51,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createImageViewUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createImageViewUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -72,9 +62,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createRenderPassUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createRenderPassUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -85,9 +73,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createShaderModuleUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createShaderModuleUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -98,9 +84,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createDescriptorSetLayoutUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createDescriptorSetLayoutUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -111,9 +95,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createDescriptorPoolUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createDescriptorPoolUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -124,9 +106,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createPipelineLayoutUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createPipelineLayoutUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -137,9 +117,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createFramebufferUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createFramebufferUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -150,9 +128,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createCommandPoolUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createCommandPoolUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -163,9 +139,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createSemaphoreUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createSemaphoreUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -176,9 +150,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createFenceUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createFenceUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -189,9 +161,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createBufferUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createBufferUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -202,9 +172,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.allocateMemoryUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.allocateMemoryUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     template<>
@@ -215,9 +183,18 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return owner.createImageUnique(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch);
+        return owner.createImageUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
+    }
+
+    template<>
+    auto object<Sampler>::create_unique_handle(
+        const owner_type& owner,
+        const dispatch_type& dispatch,
+        const base_info_type& info,
+        const optional<AllocationCallbacks>& allocator
+    ) -> base::base
+    {
+        return owner.createSamplerUnique(info, allocator ? Optional{*allocator} : nullptr, dispatch);
     }
 
     auto object<GraphicsPipeline>::create_unique_handle(
@@ -227,9 +204,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return base::base{owner.createGraphicsPipelineUnique(info.cache, info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>, dispatch)};
+        return base::base{owner.createGraphicsPipelineUnique(info.cache, info, allocator ? Optional{*allocator} : nullptr, dispatch)};
     }
 
     template<>
@@ -245,7 +220,7 @@ namespace vulkan::utility
         return ::utility::container_transform<vector<base::base>>(owner.createGraphicsPipelinesUnique(
             infos.front().cache,
             vector<GraphicsPipelineCreateInfo>{infos.cbegin(), infos.cend()},
-            allocator ? *allocator : null_opt<const AllocationCallbacks>,
+            allocator ? Optional{*allocator} : nullptr,
             dispatch
         ));
     }
@@ -270,24 +245,12 @@ namespace vulkan::utility
         return owner.allocateCommandBuffersUnique(info, dispatch);
     }
 
-    object<PhysicalDevice>::object(std::nullptr_t) {}
-
-    auto object<PhysicalDevice>::operator*() -> handle_type& { return physical_device_; }
-
-    auto object<PhysicalDevice>::operator*() const -> const handle_type& { return physical_device_; }
-
-    auto object<PhysicalDevice>::operator->() -> handle_type* { return &physical_device_; }
-
-    auto object<PhysicalDevice>::operator->() const -> const handle_type* { return &physical_device_; }
-
     auto object<Instance>::create_unique_handle(
         const base_info_type& info,
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return createInstanceUnique<DispatchLoaderStatic>(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>);
+        return createInstanceUnique<DispatchLoaderStatic>(info, allocator ? Optional{*allocator} : nullptr);
     }
 
     void object<Instance>::initialize(const optional<AllocationCallbacks>& allocator)
@@ -296,17 +259,13 @@ namespace vulkan::utility
         dispatch_.init(**this);
     }
 
-    const DispatchLoaderDynamic& object<Instance>::dispatch() const { return dispatch_; }
-
     auto object<Device>::create_unique_handle(
         const PhysicalDevice& physical_device,
         const base_info_type& info,
         const optional<AllocationCallbacks>& allocator
     ) -> base::base
     {
-        return physical_device.createDeviceUnique<DispatchLoaderStatic>(info, allocator ?
-            *allocator :
-            null_opt<const AllocationCallbacks>);
+        return physical_device.createDeviceUnique<DispatchLoaderStatic>(info, allocator ? Optional{*allocator} : nullptr);
     }
 
     void object<Device>::initialize(
@@ -319,21 +278,4 @@ namespace vulkan::utility
         dispatch_ = dispatch;
         dispatch_.init(**this);
     }
-
-    const DispatchLoaderDynamic& object<Device>::dispatch() const { return dispatch_; }
-    const VertexInputBindingDescription vertex::description = {0, sizeof(vertex), VertexInputRate::eVertex};
-    const array<VertexInputAttributeDescription, 2> vertex::attribute_descriptions = {
-        VertexInputAttributeDescription{
-        0,
-        0,
-        constant::format<vec2>,
-        static_cast<uint32_t>(MEMBER_OFFSET(vertex, pos))
-    },
-        VertexInputAttributeDescription{
-        1,
-        0,
-        constant::format<vec3>,
-        static_cast<uint32_t>(MEMBER_OFFSET(vertex, color))
-    }
-    };
 }

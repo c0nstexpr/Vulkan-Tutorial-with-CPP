@@ -10,16 +10,16 @@ namespace utility
 	{}
 
 	template<typename T, typename U>
-	typename property<T, U>::value_type_const_reference property<T, U>::operator()() const
+	constexpr auto property<T, U>::operator()() const -> value_type_const_reference
 	{
 		return (class_.*getter)();
 	}
 
 	template<typename T, typename U>
-	property<T, U>::operator const U& () const { return (class_.*getter)(); }
+	constexpr property<T, U>::operator const U& () const { return (class_.*getter)(); }
 
 	template<typename T, typename U>
-	const property<T, U>& property<T, U>::operator=(value_type right) const
+	constexpr const property<T, U>& property<T, U>::operator=(value_type right) const
 	{
 		(class_.*setter)(std::move(right));
 		return *this;

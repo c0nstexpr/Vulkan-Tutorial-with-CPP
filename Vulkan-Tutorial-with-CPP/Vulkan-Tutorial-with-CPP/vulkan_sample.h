@@ -37,10 +37,39 @@ namespace vulkan
         void generate_graphics_command_pool_create_info();
         void generate_graphics_command_buffer_allocate_info();
         void generate_buffer_allocate_info();
-        void generate_image_create_info();
+        void generate_texture_image_create_info();
+        void generate_texture_image_view_create_info();
+        void generate_texture_sampler_create_info();
         void generate_sync_objects_create_info();
         void submit_precondition_command();
         void generate_render_info();
+
+        void initialize_instance();
+        void initialize_debug_messenger();
+        void initialize_surface();
+        void initialize_device();
+        void initialize_queue();
+        void initialize_swap_chain();
+        void initialize_image_views();
+        void initialize_render_pass();
+        void initialize_shader_module();
+        void initialize_descriptor_set_layout();
+        void initialize_descriptor_pool();
+        void initialize_descriptor_set();
+        void initialize_pipeline_layout();
+        void initialize_graphics_pipeline();
+        void initialize_transform_buffer();
+        void initialize_graphics_command_pool();
+        void initialize_graphics_command_buffer();
+        void initialize_buffer();
+        void initialize_texture_image();
+        void initialize_sampler();
+        void initialize_sync_objects();
+        void initialize_frame_buffer();
+        void initialize_texture_image_view();
+        void initialize_vulkan();
+        void re_initialize_vulkan();
+        void glfw_cleanup() noexcept;
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
             const VkDebugUtilsMessageSeverityFlagBitsEXT,
@@ -48,10 +77,6 @@ namespace vulkan
             const VkDebugUtilsMessengerCallbackDataEXT*,
             void*
         );
-
-        void initialize_vulkan();
-        void re_initialize_vulkan();
-        void glfw_cleanup() noexcept;
 
         GLFWwindow* window_{nullptr};
 
@@ -100,11 +125,13 @@ namespace vulkan
 
         vector<command_buffer_object> graphics_command_buffers_;
 
-        stb::image<channel::rgb_alpha> texture_image_;
+        stb::image<channel::rgb_alpha> texture_image_src_{};
         buffer_object image_buffer_;
         device_memory_object image_buffer_memory_;
-        image_object image_;
+        image_object texture_image_;
         device_memory_object image_memory_;
+        image_view_object texture_image_view_;
+        sampler_object texture_sampler_;
 
         info_proxy<CommandBufferBeginInfo> command_buffer_begin_info_;
         vector<info_proxy<RenderPassBeginInfo>> render_pass_begin_infos_;
@@ -149,7 +176,7 @@ namespace vulkan
         void set_indices(decltype(transfer_memory_)::value_type<uint32_t>);
         constexpr const decltype(transfer_memory_)::value_type<uint32_t>& get_indices() const;
 
-        void set_image(decltype(texture_image_));
+        void set_image(decltype(texture_image_src_));
 
         static constexpr uint32_t width = 800;
         static constexpr uint32_t height = 600;

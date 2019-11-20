@@ -3,13 +3,10 @@
 namespace vulkan::utility::stb
 {
 	template<channel Channel>
-	image<Channel>::image(vector<vector<pixel_t>> pixels, const channel real_channel_type) :
-		pixels_(std::move(pixels)), real_channel_type_(real_channel_type)
-	{}
-
-	template<channel Channel>
-	image<Channel>::image(const size_type width, const size_type height, const channel real_channel) :
-		image{{width, vector<pixel_t>{height}, real_channel}}
+	image<Channel>::image(const size_type width, const size_type height, const channel real_channel) noexcept :
+		pixels_(width* height* channel_type),
+		height_(height),
+		real_channel_type_(real_channel)
 	{}
 
 	template<channel Channel>
@@ -18,12 +15,12 @@ namespace vulkan::utility::stb
 		const size_type width,
 		const size_type height,
 		const channel real_channel
-	) : image({width, vector<pixel_t>(height)}, static_cast<channel>(real_channel))
+	) :
+		height_(height),
+		real_channel_type_(real_channel)
 	{
-		for(size_type i = 0; i < width; ++i)
-			for(size_type j = 0; j < height; ++j)
-				for(size_type k = 0; k < pixel_t::length(); ++k)
-					pixels_[i][j][static_cast<length_t>(k)] = std::byte{stb_uc_ptr[i * height + j * pixel_t::length() + k]};
+		const auto ptr = reinterpret_cast<const pixel_t*>(stb_uc_ptr);
+		pixels_ = {ptr, ptr + width * height};
 	}
 
 	template<channel Channel>
@@ -83,107 +80,48 @@ namespace vulkan::utility::stb
 	}
 
 	template<channel Channel>
-	vector<stbi_uc> image<Channel>::to_stb_vec() const
+	vector<stbi_uc> image<Channel>::to_stb_vec() const noexcept
 	{
-		vector<stbi_uc> stb_uc_vec(width() * height() * pixel_t::length());
-		for(size_type i = 0; i < width(); ++i)
-			for(size_type j = 0; j < height(); ++j)
-				for(size_type k = 0; k < pixel_t::length(); ++k)
-					stb_uc_vec[i * height() + j * pixel_t::length() + k] =
-					static_cast<stbi_uc>(pixels_[i][j][static_cast<length_t>(k)]);
-		return stb_uc_vec;
+		const auto ptr = reinterpret_cast<const stbi_uc*>(pixels_.data());
+		return {ptr, ptr + width() * height() * static_cast<channel_underlying_type>(channel_type)};
 	}
 
 	template<channel Channel>
-	auto image<Channel>::width() const { return pixels_.size(); }
-
-	template<channel Channel>
-	auto image<Channel>::height() const { return width() != 0 ? pixels_[0].size() : 0; }
-
-	template<channel Channel>
-	auto image<Channel>::pixel_size() const { return width() * height(); }
-
-	template<channel Channel>
-	auto image<Channel>::real_channel() const { return real_channel_type_; }
-
-	template<channel Channel>
-	auto image<Channel>::cbegin() const { return pixels_.cbegin(); }
-
-	template<channel Channel>
-	auto image<Channel>::cend() const { return pixels_.cend(); }
-
-	template<channel Channel>
-	auto image<Channel>::begin() const { return pixels_.begin(); }
-
-	template<channel Channel>
-	auto image<Channel>::end() const { return pixels_.end(); }
-
-	template<channel Channel>
-	auto& image<Channel>::operator[](const size_type i) { return pixels_[i]; }
-
-	template<channel Channel>
-	const auto& image<Channel>::operator[](const size_type i) const { return pixels_[i]; }
-
-	template<channel Channel>
-	void image<Channel>::save(const path& save_path, const int quality) const
+	auto image<Channel>::width() const noexcept
 	{
-		if(!save_path.has_extension())
-			throw std::invalid_argument("path doesn't have extension");
-		auto stb_vec = to_stb_vec();
-		switch(from_string(save_path.extension().generic_u8string()))
-		{
-		case image_format::png:
-		stbi_write_png(
-			save_path.generic_u8string().c_str(),
-			static_cast<int>(width()),
-			static_cast<int>(height()),
-			static_cast<int>(channel_type),
-			stb_vec.data(),
-			0
-		);
-		break;
-
-		case image_format::jpg:
-		stbi_write_jpg(
-			save_path.generic_u8string().c_str(),
-			static_cast<int>(width()),
-			static_cast<int>(height()),
-			static_cast<int>(channel_type),
-			stb_vec.data(),
-			quality
-		);
-		break;
-
-		case image_format::bmp:
-		stbi_write_bmp(
-			save_path.generic_u8string().c_str(),
-			static_cast<int>(width()),
-			static_cast<int>(height()),
-			static_cast<int>(channel_type),
-			stb_vec.data()
-		);
-		break;
-
-		default: break;
-		}
+		return pixels_.size() / height();
 	}
 
 	template<channel Channel>
-	template<channel RequiredChannel>
-	image<RequiredChannel> image<Channel>::select(const rect selected) const
-	{
-		const vector<vector<pixel_t>> resized_pixels{selected.bottom_right.x - selected.upper_left.x};
+	auto image<Channel>::height() const noexcept { return height_; }
 
-		std::transform(
-			pixels_.cbegin() + selected.upper_left.x,
-			pixels_.cbegin() + selected.bottom_right.x,
-			resized_pixels.begin(),
-			[&selected](decltype(*pixels_.cbegin()) row_pixel)
-			{
-				return {row_pixel.cbegin() + selected.upper_left.y, row_pixel.cbegin() + selected.bottom_right.y};
-			}
-		);
+	template<channel Channel>
+	auto image<Channel>::pixel_size() const noexcept { return pixels_.size(); }
 
-		return image<RequiredChannel>{image{resized_pixels}};
-	}
+	template<channel Channel>
+	auto image<Channel>::real_channel() const noexcept { return real_channel_type_; }
+
+	template<channel Channel>
+	auto image<Channel>::cbegin() const noexcept { return pixels_.cbegin(); }
+
+	template<channel Channel>
+	auto image<Channel>::cend() const noexcept { return pixels_.cend(); }
+
+	template<channel Channel>
+	auto image<Channel>::begin() const noexcept { return pixels_.begin(); }
+
+	template<channel Channel>
+	auto image<Channel>::end() const noexcept { return pixels_.end(); }
+
+	template<channel Channel>
+	auto image<Channel>::begin() noexcept { return pixels_.begin(); }
+
+	template<channel Channel>
+	auto image<Channel>::end() noexcept { return pixels_.end(); }
+
+	template<channel Channel>
+	auto& image<Channel>::operator[](const size_type i) noexcept { return pixels_[i]; }
+
+	template<channel Channel>
+	const auto& image<Channel>::operator[](const size_type i) const noexcept { return pixels_[i]; }
 }

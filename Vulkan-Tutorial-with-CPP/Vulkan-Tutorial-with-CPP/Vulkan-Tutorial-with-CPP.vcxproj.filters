@@ -128,6 +128,9 @@
     <None Include="vulkan\utility\constant\constant.tpp">
       <Filter>头文件\vulkan\utility\constant</Filter>
     </None>
+    <None Include="vulkan\utility\info\info.tpp">
+      <Filter>头文件\vulkan\utility\info</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utility\property.h">

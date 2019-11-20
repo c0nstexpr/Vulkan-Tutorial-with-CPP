@@ -1,11 +1,10 @@
 #define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include "image.h"
 
 namespace vulkan::utility::stb
 {
-    image_format from_string(const string extension)
+    image_format from_string(const string& extension)
     {
         for(size_t i = 0; i < image_format_str.size(); ++i)
             if(image_format_str[i].data() == extension)

@@ -27,7 +27,7 @@ namespace vulkan
 		const auto& swap_chain_image_syn = *swap_chain_image_syn_[frame_count_ % swap_chain_image_syn_.size()];
 		const auto index = device_->acquireNextImageKHR(
 			*swap_chain_,
-			numberic_max<std::uint64_t>,
+			numberic_max<uint64_t>,
 			swap_chain_image_syn,
 			nullptr,
 			device_.dispatch()
