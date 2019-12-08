@@ -149,7 +149,7 @@ namespace vulkan::utility
     using physical_device_object = object<PhysicalDevice>;
     using debug_messenger_object = object<DebugUtilsMessengerEXT>;
     using surface_object = object<SurfaceKHR>;
-    using swap_chain_object = object<SwapchainKHR>;
+    using swapchain_object = object<SwapchainKHR>;
     using image_view_object = object<ImageView>;
     using render_pass_object = object<RenderPass>;
     using frame_buffer_object = object<Framebuffer>;
@@ -170,9 +170,13 @@ namespace vulkan::utility
 
     struct vertex_base
     {
-        vec2 pos;
-        vec3 color;
-        vec2 texture;
+        static constexpr auto pos_format = Format::eR32G32B32Sfloat;
+        static constexpr auto color_format = Format::eR32G32B32Sfloat;
+        static constexpr auto texture_coordinate_format = Format::eR32G32Sfloat;
+
+        constant::format_t<pos_format> pos;
+        constant::format_t<color_format> color;
+        constant::format_t<texture_coordinate_format> texture_coordinate;
     };
 
     struct vertex : vertex_base
@@ -180,7 +184,7 @@ namespace vulkan::utility
         using base = vertex_base;
         using base::base;
 
-        constexpr vertex(const vec2, const vec3, const vec2) noexcept;
+        constexpr vertex(vec3, vec3, vec2) noexcept;
 
         static constexpr VertexInputBindingDescription description{
             0,
@@ -192,20 +196,20 @@ namespace vulkan::utility
             VertexInputAttributeDescription{
             0,
             0,
-            constant::format<decltype(pos)>,
+            pos_format,
             static_cast<uint32_t>(MEMBER_OFFSET(base, pos))
         },
             VertexInputAttributeDescription{
             1,
             0,
-            constant::format<decltype(color)>,
+            color_format,
             static_cast<uint32_t>(MEMBER_OFFSET(base, color))
         },
             VertexInputAttributeDescription{
             2,
             0,
-            constant::format<decltype(texture)>,
-            static_cast<uint32_t>(MEMBER_OFFSET(base, texture))
+            texture_coordinate_format,
+            static_cast<uint32_t>(MEMBER_OFFSET(base, texture_coordinate))
         }
         };
     };

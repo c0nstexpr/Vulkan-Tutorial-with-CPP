@@ -2,7 +2,7 @@
 
 namespace vulkan::utility::constant
 {
-	static constexpr pair<AccessFlagBits, PipelineStageFlagBits> required_access_and_pipeline_stage(const ImageLayout layout)
+	constexpr pair<AccessFlags, PipelineStageFlagBits> required_access_and_pipeline_stage(const ImageLayout layout)
 	{
 		switch(layout)
 		{
@@ -14,6 +14,12 @@ namespace vulkan::utility::constant
 
 		case ImageLayout::eShaderReadOnlyOptimal:
 		return  {AccessFlagBits::eShaderRead, PipelineStageFlagBits::eFragmentShader};
+
+		case ImageLayout::eDepthStencilAttachmentOptimal:
+		return {
+			AccessFlagBits::eDepthStencilAttachmentRead | AccessFlagBits::eDepthStencilAttachmentWrite,
+			PipelineStageFlagBits::eEarlyFragmentTests
+		};
 
 		default: throw std::invalid_argument{"unsupported layout"};
 		}

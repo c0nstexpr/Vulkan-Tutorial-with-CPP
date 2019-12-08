@@ -1049,21 +1049,21 @@ namespace vulkan::utility
 	void info_proxy<PresentInfoKHR>::property_copy(const info_proxy& right) const
 	{
 		wait_semaphores_property = right.wait_semaphores_property;
-		swap_chains_property = right.swap_chains_property;
+		swapchains_property = right.swapchains_property;
 		image_indices_property = right.image_indices_property;
 		results_property = right.results_property;
 	}
 
 	info_proxy<PresentInfoKHR>::info_proxy(
 		decltype(wait_semaphores_) wait_semaphores,
-		decltype(swap_chains_) swap_chains,
+		decltype(swapchains_) swapchains,
 		decltype(image_indices_) image_indices,
 		decltype(results_) results,
 		decltype(info) i
 	) : base(std::move(i))
 	{
 		wait_semaphores_property = std::move(wait_semaphores);
-		swap_chains_property = std::move(swap_chains);
+		swapchains_property = std::move(swapchains);
 		image_indices_property = std::move(image_indices);
 		results_property = std::move(results);
 	}
@@ -1084,11 +1084,11 @@ namespace vulkan::utility
 		info.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores_.size());
 	}
 
-	void info_proxy<PresentInfoKHR>::set_swap_chains(decltype(swap_chains_) value)
+	void info_proxy<PresentInfoKHR>::set_swapchains(decltype(swapchains_) value)
 	{
-		swap_chains_ = std::move(value);
-		info.pSwapchains = swap_chains_.size() != 0 ? swap_chains_.data() : nullptr;
-		info.swapchainCount = static_cast<uint32_t>(swap_chains_.size());
+		swapchains_ = std::move(value);
+		info.pSwapchains = swapchains_.size() != 0 ? swapchains_.data() : nullptr;
+		info.swapchainCount = static_cast<uint32_t>(swapchains_.size());
 	}
 
 	void info_proxy<PresentInfoKHR>::set_image_indices(decltype(image_indices_) value)

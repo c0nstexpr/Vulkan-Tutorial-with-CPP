@@ -59,9 +59,9 @@ namespace utility
 	constexpr auto to_radian(const T deg)
 	{
 		if constexpr(std::is_integral_v<T>)
-			return deg * constant::pi_v<long double> / 180;
+			return radians(static_cast<long double>(deg));
 		else
-			return deg * constant::pi_v<T> / 180;
+			return radians(deg);
 	}
 
 	template<typename UnaryOp, typename InputFirst, typename... InputRest>

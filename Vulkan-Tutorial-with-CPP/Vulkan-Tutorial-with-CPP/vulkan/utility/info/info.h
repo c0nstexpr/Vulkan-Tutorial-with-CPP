@@ -1315,7 +1315,7 @@ namespace vulkan::utility
 
 	private:
 		vector<decay_to_origin_t<decltype(info.pWaitSemaphores)>> wait_semaphores_;
-		vector<decay_to_origin_t<decltype(info.pSwapchains)>> swap_chains_;
+		vector<decay_to_origin_t<decltype(info.pSwapchains)>> swapchains_;
 		vector<decay_to_origin_t<decltype(info.pImageIndices)>> image_indices_;
 		vector<decay_to_origin_t<decltype(info.pResults)>> results_;
 
@@ -1327,7 +1327,7 @@ namespace vulkan::utility
 
 			explicit info_proxy(
 				decltype(wait_semaphores_),
-				decltype(swap_chains_) = {},
+				decltype(swapchains_) = {},
 				decltype(image_indices_) = {},
 				decltype(results_) = {},
 				decltype(info) = {}
@@ -1337,8 +1337,8 @@ namespace vulkan::utility
 		constexpr const decltype(wait_semaphores_)& get_wait_semaphores() const noexcept;
 		void set_wait_semaphores(decltype(wait_semaphores_));
 
-		constexpr const decltype(swap_chains_)& get_swap_chains() const noexcept;
-		void set_swap_chains(decltype(swap_chains_));
+		constexpr const decltype(swapchains_)& get_swapchains() const noexcept;
+		void set_swapchains(decltype(swapchains_));
 
 		constexpr const decltype(image_indices_)& get_image_indices() const noexcept;
 		void set_image_indices(decltype(image_indices_));
@@ -1351,10 +1351,10 @@ namespace vulkan::utility
 				& info_proxy::get_wait_semaphores,
 				& info_proxy::set_wait_semaphores
 		};
-		const property<info_proxy, decltype(swap_chains_)> swap_chains_property{
+		const property<info_proxy, decltype(swapchains_)> swapchains_property{
 			*this,
-				& info_proxy::get_swap_chains,
-				& info_proxy::set_swap_chains
+				& info_proxy::get_swapchains,
+				& info_proxy::set_swapchains
 		};
 		const property<info_proxy, decltype(image_indices_)> image_indices_property{
 			*this,

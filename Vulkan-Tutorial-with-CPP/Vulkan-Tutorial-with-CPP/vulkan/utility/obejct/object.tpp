@@ -112,7 +112,7 @@ namespace vulkan::utility
 
     constexpr const DispatchLoaderDynamic& object<Device>::dispatch() const noexcept { return dispatch_; }
 
-    constexpr vertex::vertex(const vec2 pos, const vec3 color, const vec2 texture) noexcept :
+    constexpr vertex::vertex(const vec3 pos, const vec3 color, const vec2 texture) noexcept :
         base{pos, color, texture}
     {}
 }

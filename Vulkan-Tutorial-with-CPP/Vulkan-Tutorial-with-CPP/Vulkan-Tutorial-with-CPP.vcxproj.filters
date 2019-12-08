@@ -78,9 +78,6 @@
     <ClCompile Include="vulkan\utility\obejct\object.cpp">
       <Filter>源文件\vulkan\utility\object</Filter>
     </ClCompile>
-    <ClCompile Include="vulkan\utility\obejct\memory.cpp">
-      <Filter>源文件\vulkan\utility\object</Filter>
-    </ClCompile>
     <ClCompile Include="vulkan\utility\stb\image.cpp">
       <Filter>源文件\vulkan\utility\stb</Filter>
     </ClCompile>
@@ -96,6 +93,9 @@
     <ClCompile Include="vulkan\utility\obejct\image.cpp">
       <Filter>源文件\vulkan\utility\object</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan\utility\obejct\static_memory.cpp">
+      <Filter>源文件\vulkan\utility\object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resource\shaders\shader.vert">
@@ -108,9 +108,6 @@
       <Filter>头文件\vulkan\utility\object</Filter>
     </None>
     <None Include="vulkan\utility\obejct\object_traits.tpp">
-      <Filter>头文件\vulkan\utility\object</Filter>
-    </None>
-    <None Include="vulkan\utility\obejct\memory.tpp">
       <Filter>头文件\vulkan\utility\object</Filter>
     </None>
     <None Include="vulkan\utility\stb\image.tpp">
@@ -130,6 +127,12 @@
     </None>
     <None Include="vulkan\utility\info\info.tpp">
       <Filter>头文件\vulkan\utility\info</Filter>
+    </None>
+    <None Include="vulkan\utility\obejct\static_memory.tpp">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </None>
+    <None Include="vulkan\utility\obejct\image.tpp">
+      <Filter>头文件\vulkan\utility\object</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -160,9 +163,6 @@
     <ClInclude Include="vulkan\utility\constant\constant.h">
       <Filter>头文件\vulkan\utility\constant</Filter>
     </ClInclude>
-    <ClInclude Include="vulkan\utility\obejct\memory.h">
-      <Filter>头文件\vulkan\utility\object</Filter>
-    </ClInclude>
     <ClInclude Include="vulkan\utility\obejct\object.h">
       <Filter>头文件\vulkan\utility\object</Filter>
     </ClInclude>
@@ -185,6 +185,9 @@
       <Filter>头文件\vulkan\utility</Filter>
     </ClInclude>
     <ClInclude Include="vulkan\utility\obejct\image.h">
+      <Filter>头文件\vulkan\utility\object</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\utility\obejct\static_memory.h">
       <Filter>头文件\vulkan\utility\object</Filter>
     </ClInclude>
   </ItemGroup>

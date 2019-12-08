@@ -91,7 +91,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -111,7 +111,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -133,7 +133,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -157,7 +157,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;$(ProjectDir)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -178,7 +178,7 @@
     <ClCompile Include="utility\utility.cpp" />
     <ClCompile Include="vulkan\utility\info\info.cpp" />
     <ClCompile Include="vulkan\utility\obejct\image.cpp" />
-    <ClCompile Include="vulkan\utility\obejct\memory.cpp" />
+    <ClCompile Include="vulkan\utility\obejct\static_memory.cpp" />
     <ClCompile Include="vulkan\utility\obejct\object.cpp" />
     <ClCompile Include="vulkan\utility\shaderc\shaderc.cpp" />
     <ClCompile Include="vulkan\utility\stb\image.cpp" />
@@ -192,7 +192,8 @@
     <None Include="utility\utility.tpp" />
     <None Include="vulkan\utility\constant\constant.tpp" />
     <None Include="vulkan\utility\info\info.tpp" />
-    <None Include="vulkan\utility\obejct\memory.tpp" />
+    <None Include="vulkan\utility\obejct\image.tpp" />
+    <None Include="vulkan\utility\obejct\static_memory.tpp" />
     <None Include="vulkan\utility\obejct\object.tpp" />
     <None Include="vulkan\utility\obejct\object_traits.tpp" />
     <None Include="vulkan\utility\stb\image.tpp" />
@@ -208,7 +209,7 @@
     <ClInclude Include="vulkan\utility\constant\constant.h" />
     <ClInclude Include="vulkan\utility\info\info.h" />
     <ClInclude Include="vulkan\utility\obejct\image.h" />
-    <ClInclude Include="vulkan\utility\obejct\memory.h" />
+    <ClInclude Include="vulkan\utility\obejct\static_memory.h" />
     <ClInclude Include="vulkan\utility\obejct\object.h" />
     <ClInclude Include="vulkan\utility\obejct\object_traits.h" />
     <ClInclude Include="vulkan\utility\shaderc\shaderc.h" />

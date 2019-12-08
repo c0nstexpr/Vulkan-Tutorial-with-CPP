@@ -24,11 +24,11 @@ namespace vulkan
 			return false;
 		glfwPollEvents();
 
-		const auto& swap_chain_image_syn = *swap_chain_image_syn_[frame_count_ % swap_chain_image_syn_.size()];
+		const auto& swapchain_image_syn = *swapchain_image_syn_[frame_count_ % swapchain_image_syn_.size()];
 		const auto index = device_->acquireNextImageKHR(
-			*swap_chain_,
+			*swapchain_,
 			numberic_max<uint64_t>,
-			swap_chain_image_syn,
+			swapchain_image_syn,
 			nullptr,
 			device_.dispatch()
 		).value;
@@ -38,7 +38,7 @@ namespace vulkan
 			if constexpr(!std::is_same_v<T, empty_type>)
 				t(index);
 
-			submit_infos_[index].wait_semaphores_property = vector<Semaphore>{swap_chain_image_syn};
+			submit_infos_[index].wait_semaphores_property = vector<Semaphore>{swapchain_image_syn};
 
 			if(device_->getFenceStatus(*gpu_syn_[index], device_.dispatch()) == Result::eSuccess)
 			{

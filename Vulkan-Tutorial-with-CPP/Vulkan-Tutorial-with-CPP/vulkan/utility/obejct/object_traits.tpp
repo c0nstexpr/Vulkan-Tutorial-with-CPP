@@ -14,7 +14,7 @@ namespace vulkan::utility
     constexpr object_traits<HandleType, DispatchType>::object_traits(std::nullptr_t) noexcept {}
 
     template<typename HandleType, typename DispatchType>
-    object_traits<HandleType, DispatchType>::object_traits(info_type info, base base_handle) noexcept :
+    constexpr object_traits<HandleType, DispatchType>::object_traits(info_type info, base base_handle) noexcept :
         base(std::move(base_handle)),
         info_(std::move(info))
     {}

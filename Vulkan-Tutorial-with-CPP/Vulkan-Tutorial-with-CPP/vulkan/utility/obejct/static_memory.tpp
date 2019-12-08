@@ -41,7 +41,7 @@ namespace vulkan::utility
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    void memory<Cached, Types...>::array_values<Counts...>::generate_buffer_info(
+    void static_memory<Cached, Types...>::array_values<Counts...>::generate_buffer_info(
         const array<BufferUsageFlags, type_list::size>& usages
     )
     {
@@ -75,7 +75,7 @@ namespace vulkan::utility
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    void memory<Cached, Types...>::array_values<Counts...>::generate_memory_info(const PhysicalDevice& physical_device)
+    void static_memory<Cached, Types...>::array_values<Counts...>::generate_memory_info(const PhysicalDevice& physical_device)
     {
         {
             auto&& [memory, type_offsets] = generate_buffer_memory_info(
@@ -104,7 +104,7 @@ namespace vulkan::utility
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    void memory<Cached, Types...>::array_values<Counts...>::bind_buffer_memory() const
+    void static_memory<Cached, Types...>::array_values<Counts...>::bind_buffer_memory() const
     {
         ::utility::for_each(
             [this](
@@ -131,7 +131,7 @@ namespace vulkan::utility
     template<bool Cached, typename... Types>
     template<size_t... Counts>
     template<typename T, typename Op>
-    void memory<Cached, Types...>::array_values<Counts...>::write_impl(value_type<T> value, [[maybe_unused]] const Op& op)
+    void static_memory<Cached, Types...>::array_values<Counts...>::write_impl(value_type<T> value, [[maybe_unused]] const Op& op)
     {
         if(host_memory_)
             if constexpr(std::is_same_v<Op, empty_type>)
@@ -153,7 +153,7 @@ namespace vulkan::utility
 
     template<bool Cached, typename... Types>
     template<size_t... Counts>
-    memory<Cached, Types...>::array_values<Counts...>::array_values(
+    static_memory<Cached, Types...>::array_values<Counts...>::array_values(
         const device_object& device,
         const array<BufferUsageFlags, type_list::size>& usages,
         const initializer_list<pair<size_t, size_t>> require_size_modify_pairs
@@ -167,7 +167,7 @@ namespace vulkan::utility
 
     template<bool Cached, typename... Types>
     template<size_t... Counts>
-    memory<Cached, Types...>::array_values<Counts...>::array_values(
+    static_memory<Cached, Types...>::array_values<Counts...>::array_values(
         const PhysicalDevice& physical_device,
         const device_object& device,
         const array<BufferUsageFlags, type_list::size>& usages,
@@ -179,7 +179,7 @@ namespace vulkan::utility
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    void memory<Cached, Types...>::array_values<Counts...>::initialize(const PhysicalDevice& physical_device)
+    void static_memory<Cached, Types...>::array_values<Counts...>::initialize(const PhysicalDevice& physical_device)
     {
         ::utility::for_each(
             [this](
@@ -206,7 +206,7 @@ namespace vulkan::utility
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
     template<typename ... T>
-    void memory<Cached, Types...>::array_values<Counts...>::write(value_type<T> ... values)
+    void static_memory<Cached, Types...>::array_values<Counts...>::write(value_type<T> ... values)
     {
         (write_impl<T>(std::move(values), empty_type{}), ...);
     }
@@ -214,7 +214,7 @@ namespace vulkan::utility
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
     template<typename T, typename Op>
-    void memory<Cached, Types...>::array_values<Counts...>::write(value_type<T> value, const Op& op)
+    void static_memory<Cached, Types...>::array_values<Counts...>::write(value_type<T> value, const Op& op)
     {
         write_impl<T>(value, op);
     }
@@ -222,7 +222,7 @@ namespace vulkan::utility
     template<bool Cached, typename... Types>
     template<size_t... Counts>
     template<typename... T>
-    void memory<Cached, Types...>::array_values<Counts...>::flush()
+    void static_memory<Cached, Types...>::array_values<Counts...>::flush()
     {
         ((*device_)->flushMappedMemoryRanges({MappedMemoryRange{
             *host_memory_,
@@ -234,14 +234,14 @@ namespace vulkan::utility
     template<bool Cached, typename... Types>
     template<size_t... Counts>
     template<typename T>
-    constexpr const auto& memory<Cached, Types...>::array_values<Counts...>::read() const
+    constexpr const auto& static_memory<Cached, Types...>::array_values<Counts...>::read() const
     {
         return std::get<type_index<T>>(type_values_);
     }
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    void memory<Cached, Types...>::array_values<Counts...>::write_transfer_command(const CommandBuffer& command_buffer) const
+    void static_memory<Cached, Types...>::array_values<Counts...>::write_transfer_command(const CommandBuffer& command_buffer) const
     {
         ::utility::for_each([dispatch = device_->dispatch(), &command_buffer](
             decltype(*device_local_buffers_.cbegin()) device_local_buffer,
@@ -259,28 +259,28 @@ namespace vulkan::utility
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    constexpr const auto& memory<Cached, Types...>::array_values<Counts...>::device_local_buffer(const size_t i) const
+    constexpr const auto& static_memory<Cached, Types...>::array_values<Counts...>::device_local_buffer(const size_t i) const
     {
         return device_local_buffers_[i];
     }
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    constexpr const auto& memory<Cached, Types...>::array_values<Counts...>::host_buffer(const size_t i) const
+    constexpr const auto& static_memory<Cached, Types...>::array_values<Counts...>::host_buffer(const size_t i) const
     {
         return host_buffers_[i];
     }
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    constexpr const auto& memory<Cached, Types...>::array_values<Counts...>::device_local_memory() const
+    constexpr const auto& static_memory<Cached, Types...>::array_values<Counts...>::device_local_memory() const
     {
         return device_local_memory_;
     }
 
     template<bool Cached, typename ... Types>
     template<size_t... Counts>
-    constexpr const auto& memory<Cached, Types...>::array_values<Counts...>::host_memory() const
+    constexpr const auto& static_memory<Cached, Types...>::array_values<Counts...>::host_memory() const
     {
         return host_memory_;
     }

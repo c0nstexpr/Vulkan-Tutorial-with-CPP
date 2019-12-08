@@ -332,7 +332,7 @@ namespace vulkan::utility
 	constexpr void info_proxy<PresentInfoKHR>::property_move(info_proxy&& right) const noexcept
 	{
 		wait_semaphores_property = std::move(right.wait_semaphores_);
-		swap_chains_property = std::move(right.swap_chains_);
+		swapchains_property = std::move(right.swapchains_);
 		image_indices_property = std::move(right.image_indices_);
 		results_property = std::move(right.results_);
 	}
@@ -340,8 +340,8 @@ namespace vulkan::utility
 	constexpr auto info_proxy<PresentInfoKHR>::get_wait_semaphores() const noexcept ->
 		const decltype(wait_semaphores_)& { return wait_semaphores_; }
 
-	constexpr auto info_proxy<PresentInfoKHR>::get_swap_chains() const noexcept ->
-		const decltype(swap_chains_)& { return swap_chains_; }
+	constexpr auto info_proxy<PresentInfoKHR>::get_swapchains() const noexcept ->
+		const decltype(swapchains_)& { return swapchains_; }
 
 	constexpr auto info_proxy<PresentInfoKHR>::get_image_indices() const noexcept ->
 		const decltype(image_indices_)& { return image_indices_; }

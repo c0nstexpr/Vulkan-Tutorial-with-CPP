@@ -41,7 +41,7 @@ namespace utility::type_traits
     struct value_identity { static constexpr auto value = Value; };
 
     template<auto Value>
-    static constexpr auto value_identity_v = value_identity<Value>::value;
+    inline constexpr auto value_identity_v = value_identity<Value>::value;
 
     template<bool Test, typename T, typename  U>
     constexpr std::conditional_t<Test, T, U> conditional_value(const T t, const U u)

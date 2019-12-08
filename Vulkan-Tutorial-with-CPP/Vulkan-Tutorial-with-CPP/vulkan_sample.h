@@ -6,11 +6,13 @@
 namespace vulkan
 {
     using namespace utility;
+    using namespace constant;
+    using namespace shaderc;
+
+    using namespace ::utility::constant::numeric;
     using namespace ::utility::constant;
     using namespace ::utility;
-    using namespace constant;
-    using namespace numeric;
-    using namespace shaderc;
+
     using ::time;
     using stb::channel;
 
@@ -20,54 +22,90 @@ namespace vulkan
 
         void generate_debug_messenger_create_info();
         void generate_instance_create_info();
-        bool generate_physical_device(const PhysicalDevice&);
-        void generate_device_create_info();
-        void generate_surface_create_info();
-        void generate_swap_chain_create_info();
-        void generate_image_view_create_infos();
-        void generate_render_pass_create_info();
-        void generate_framebuffer_create_infos();
-        void generate_shader_module_create_infos();
-        void generate_descriptor_set_layout_create_info();
-        void generate_descriptor_pool_create_info();
-        void generate_descriptor_set_allocate_info();
-        void generate_pipeline_layout_create_info();
-        void generate_graphics_pipeline_create_info();
-        void generate_transform_buffer_create_info();
-        void generate_graphics_command_pool_create_info();
-        void generate_graphics_command_buffer_allocate_info();
-        void generate_buffer_allocate_info();
-        void generate_texture_image_create_info();
-        void generate_texture_image_view_create_info();
-        void generate_texture_sampler_create_info();
-        void generate_sync_objects_create_info();
-        void submit_precondition_command();
-        void generate_render_info();
 
         void initialize_instance();
+
+        void generate_surface_create_info();
+
         void initialize_debug_messenger();
         void initialize_surface();
+
+        bool generate_physical_device(const PhysicalDevice&, const surface_object&);
+        void initialize_physical_device();
+
+        void generate_device_create_info();
         void initialize_device();
+
         void initialize_queue();
-        void initialize_swap_chain();
-        void initialize_image_views();
-        void initialize_render_pass();
+
+        void generate_shader_module_create_infos();
+        void generate_descriptor_set_layout_create_info();
+        void generate_texture_image_create_info();
+        void generate_buffer_allocate_info();
+        void generate_texture_sampler_create_info();
+        void generate_transform_buffer_create_info();
+        void generate_graphics_command_pool_create_info();
+
         void initialize_shader_module();
         void initialize_descriptor_set_layout();
-        void initialize_descriptor_pool();
-        void initialize_descriptor_set();
-        void initialize_pipeline_layout();
-        void initialize_graphics_pipeline();
+        void initialize_texture_image();
+        void initialize_buffer();
+        void initialize_texture_sampler();
         void initialize_transform_buffer();
         void initialize_graphics_command_pool();
+
+        void generate_pipeline_layout_create_info(const descriptor_set_layout_object&);
+        void generate_swapchain_create_info(const surface_object&);
+
+        void initialize_pipeline_layout();
+        void initialize_swapchain();
+
+        void generate_depth_image_create_info(const swapchain_object&);
+        void generate_image_view_create_infos(const swapchain_object&);
+
+        void initialize_depth_image();
+        void initialize_image_views();
+
+        void generate_graphics_command_buffer_allocate_info(
+            const vector<image_view_object>&,
+            const command_pool_object&
+        );
+        void generate_render_pass_create_info(const swapchain_object&, const depth_image&);
+        void generate_descriptor_pool_create_info(const vector<image_view_object>&);
+        void generate_sync_objects_create_info(const vector<image_view_object>&);
+
         void initialize_graphics_command_buffer();
-        void initialize_buffer();
-        void initialize_texture_image();
-        void initialize_sampler();
+        void initialize_render_pass();
+        void initialize_descriptor_pool();
         void initialize_sync_objects();
+
+        void generate_framebuffer_create_infos(
+            const vector<image_view_object>&,
+            const depth_image&,
+            const render_pass_object&,
+            const swapchain_object&
+        );
+        void generate_graphics_pipeline_create_info(
+            const shader_module_object&,
+            const shader_module_object&,
+            const swapchain_object&,
+            const render_pass_object&,
+            const pipeline_layout_object&
+        );
+        void generate_descriptor_set_allocate_info(
+            const vector<image_view_object>&,
+            const descriptor_set_layout_object&,
+            const descriptor_pool_object&
+        );
+
         void initialize_frame_buffer();
-        void initialize_texture_image_view();
+        void initialize_graphics_pipeline();
+        void initialize_descriptor_sets();
+
         void initialize_vulkan();
+
+        void submit_precondition_command();
+        void generate_render_info();
         void re_initialize_vulkan();
         void glfw_cleanup() noexcept;
 
@@ -96,7 +134,7 @@ namespace vulkan
         Queue graphics_queue_;
         Queue present_queue_;
 
-        swap_chain_object swap_chain_;
+        swapchain_object swapchain_;
 
         vector<image_view_object> image_views_;
 
@@ -115,7 +153,7 @@ namespace vulkan
 
         static constexpr size_t vertices_buffer_index = 0;
         static constexpr size_t indices_buffer_index = 1;
-        memory<true, vertex, uint32_t>::array_values<4, 6> transfer_memory_;
+        static_memory<true, vertex, uint32_t>::array_values<8, 12> transfer_memory_;
 
         pipeline_layout_object pipeline_layout_;
 
@@ -126,19 +164,18 @@ namespace vulkan
         vector<command_buffer_object> graphics_command_buffers_;
 
         stb::image<channel::rgb_alpha> texture_image_src_{};
-        buffer_object image_buffer_;
-        device_memory_object image_buffer_memory_;
-        image_object texture_image_;
-        device_memory_object image_memory_;
-        image_view_object texture_image_view_;
+        texture_image<Format::eR8G8B8A8Unorm> texture_image_;
+
         sampler_object texture_sampler_;
+
+        depth_image depth_image_;
 
         info_proxy<CommandBufferBeginInfo> command_buffer_begin_info_;
         vector<info_proxy<RenderPassBeginInfo>> render_pass_begin_infos_;
         vector<info_proxy<SubmitInfo>> submit_infos_;
         vector<info_proxy<PresentInfoKHR>> present_infos_;
 
-        vector<semaphore_object> swap_chain_image_syn_;
+        vector<semaphore_object> swapchain_image_syn_;
         vector<semaphore_object> render_syn_;
         vector<fence_object> gpu_syn_;
 
@@ -153,7 +190,7 @@ namespace vulkan
         ~vulkan_sample();
         decltype(fps_) fps() const;
 
-        const SwapchainCreateInfoKHR& swap_chain_create_info() const;
+        const SwapchainCreateInfoKHR& swapchain_create_info() const;
 
         void initialize();
 
@@ -178,8 +215,8 @@ namespace vulkan
 
         void set_image(decltype(texture_image_src_));
 
-        static constexpr uint32_t width = 800;
-        static constexpr uint32_t height = 600;
+        static constexpr uint32_t width = 1280;
+        static constexpr uint32_t height = 960;
         static const string window_title;
 
         const property<vulkan_sample, decltype(transform_mat_)> transform_property{

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "memory.h"
+#include "static_memory.h"
 
 namespace vulkan::utility
 {
@@ -11,7 +11,7 @@ namespace vulkan::utility
         const decltype(MemoryRequirements::memoryTypeBits) require_memory_type_bits
     )
     {
-        const bitset<sizeof(require_memory_type_bits) * ::utility::constant::char_bit> require_memory_type_bitset{require_memory_type_bits};
+        const bitset<sizeof require_memory_type_bits * ::utility::constant::char_bit> require_memory_type_bitset{require_memory_type_bits};
         vector<MemoryType> memory_types;
         {
             const PhysicalDeviceMemoryProperties& properties = physical_device.getMemoryProperties(dispatch);
@@ -47,7 +47,7 @@ namespace vulkan::utility
 
         for(const auto& requirement : requirements)
         {
-            memory_size += (memory_size % requirement.first.alignment);//allgin
+            memory_size += memory_size % requirement.first.alignment;//allgin
             offsets[requirement.second] = memory_size;
             memory_size += requirement.first.size;
         }
@@ -71,51 +71,6 @@ namespace vulkan::utility
             [i = size_t{0}, &device](decltype(*buffers.cbegin()) buffer) mutable -> decltype(requirements)::value_type
             {
                 return {device->getBufferMemoryRequirements(buffer, device.dispatch()), i++};
-            }
-        );
-
-        {
-            const auto& index = search_memory_type_index(
-                physical_device,
-                device.dispatch(),
-                property_flags,
-                std::accumulate(requirements.cbegin(), requirements.cend(), 0, [](
-                    const decltype(MemoryRequirements::memoryTypeBits) type,
-                    decltype(*requirements.cbegin()) requirement
-                    )
-                    {
-                        return type | requirement.first.memoryTypeBits;
-                    }
-                )
-            );
-            if(!index)
-                throw std::runtime_error{"unable to fetch suitable memory type"};
-
-            memory_index = *index;
-        }
-
-        auto&& [size, offsets] = generate_memory_size_and_offsets(requirements);
-
-        return {device_memory_object{{size, memory_index}}, std::move(offsets)};
-    }
-
-    pair<device_memory_object, vector<DeviceSize>> generate_image_memory_info(
-        const device_object& device,
-        const vector<Image>& images,
-        const PhysicalDevice& physical_device,
-        const MemoryPropertyFlags property_flags
-    )
-    {
-        vector<pair<MemoryRequirements, size_t>> requirements(images.size());
-        decltype(MemoryAllocateInfo::memoryTypeIndex) memory_index;
-
-        std::transform(
-            images.cbegin(),
-            images.cend(),
-            requirements.begin(),
-            [i = size_t{0}, &device](decltype(*images.cbegin()) image) mutable -> decltype(requirements)::value_type
-            {
-                return {device->getImageMemoryRequirements(image, device.dispatch()), i++};
             }
         );
 

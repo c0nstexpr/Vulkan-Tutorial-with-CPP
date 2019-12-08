@@ -48,7 +48,7 @@ namespace vulkan::utility
 
 	public:
 		constexpr object_traits(std::nullptr_t = {}) noexcept;
-		explicit object_traits(info_type, base = base{}) noexcept;
+		constexpr explicit object_traits(info_type, base = base{}) noexcept;
 		constexpr const auto& info() const noexcept;
 	};
 

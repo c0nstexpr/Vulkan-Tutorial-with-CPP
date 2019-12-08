@@ -28,13 +28,6 @@ namespace vulkan::utility
         const MemoryPropertyFlags
     );
 
-    [[nodiscard]] pair<device_memory_object, vector<DeviceSize>> generate_image_memory_info(
-        const device_object&,
-        const vector<Image>&,
-        const PhysicalDevice&,
-        const MemoryPropertyFlags
-    );
-
     template<typename Input>
     void write(const device_memory_object&, const device_object&, const Input, const Input, const DeviceSize = 0);
 
@@ -42,7 +35,7 @@ namespace vulkan::utility
     void write(const device_memory_object&, const device_object&, const T&, const DeviceSize = 0);
 
     template<bool Cached, typename... Types>
-    class memory
+    class static_memory
     {
     public:
         using type_list = type_list<Types...>;
@@ -135,4 +128,4 @@ namespace vulkan::utility
     };
 }
 
-#include "memory.tpp"
+#include "static_memory.tpp"

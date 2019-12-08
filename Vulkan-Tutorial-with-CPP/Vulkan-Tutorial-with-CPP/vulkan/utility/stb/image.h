@@ -13,7 +13,7 @@ namespace vulkan::utility::stb
 	enum class image_format { jpg, png, bmp, unknown };
 	using image_format_underlying_type = std::underlying_type_t<image_format>;
 
-	static constexpr array<
+	inline constexpr array<
 		string_view,
 		static_cast<image_format_underlying_type>(image_format::unknown) + 1
 	> image_format_str{".jpg", ".png", ".bmp", ".unknown"};
