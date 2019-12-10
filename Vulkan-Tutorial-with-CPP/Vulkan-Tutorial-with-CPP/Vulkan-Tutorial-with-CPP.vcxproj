@@ -219,6 +219,12 @@
     <ClInclude Include="vulkan\utility\utility_core.h" />
     <ClInclude Include="vulkan_sample.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="resource\models\chalet.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="resource\models\chalet.obj" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

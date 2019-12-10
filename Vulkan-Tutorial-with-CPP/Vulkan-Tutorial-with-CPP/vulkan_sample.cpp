@@ -249,7 +249,7 @@ namespace vulkan
 
     void vulkan_sample::generate_texture_image_create_info()
     {
-        texture_image_src_ = stb::image<channel::rgb_alpha>{"freshman.jpg"};
+        texture_image_src_ = stb::image<channel::rgb_alpha>{path{"modules"} / "chalet.jpg"};
         texture_image_ = {ImageType::e2D, Extent3D{
             static_cast<uint32_t>(texture_image_src_.width()),
             static_cast<uint32_t>(texture_image_src_.height()),

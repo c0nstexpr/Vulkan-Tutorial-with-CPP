@@ -64,6 +64,9 @@
     <Filter Include="源文件\vulkan\utility\shaderc">
       <UniqueIdentifier>{96e1fd75-593b-4723-892f-2675f2b8d6f7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="资源文件\models">
+      <UniqueIdentifier>{ab35fdb0-3080-4e01-be9d-314a1f56dfb1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -190,5 +193,15 @@
     <ClInclude Include="vulkan\utility\obejct\static_memory.h">
       <Filter>头文件\vulkan\utility\object</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resource\models\chalet.jpg">
+      <Filter>资源文件\models</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="resource\models\chalet.obj">
+      <Filter>资源文件\models</Filter>
+    </Object>
   </ItemGroup>
 </Project>
