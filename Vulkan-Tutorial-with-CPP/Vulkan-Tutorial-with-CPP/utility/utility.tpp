@@ -32,7 +32,7 @@ namespace utility
 		if(length < 0)
 			throw std::out_of_range("input range incorrect, end should larger than begin");
 		T t{static_cast<size_t>(length)};
-		std::transform(begin, end, t.begin(), [&op](decltype(*begin) element) { return op(std::forward(element)); });
+		std::transform(begin, end, t.begin(), [&op](decltype(*begin) element) { return op(std::forward<decltype(element)>(element)); });
 
 		return t;
 	}

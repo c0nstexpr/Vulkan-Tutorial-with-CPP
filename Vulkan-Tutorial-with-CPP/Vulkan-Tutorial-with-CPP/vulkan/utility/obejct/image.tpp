@@ -43,7 +43,7 @@ namespace vulkan::utility
                 sampler_count ? *sampler_count : SampleCountFlagBits::e1,
                 ImageTiling::eOptimal,
                 ImageUsageFlagBits::eTransferDst |
-                (mipmap ? ImageUsageFlagBits::eTransferSrc : 0) |
+                (mipmap ? ImageUsageFlagBits::eTransferSrc : ImageUsageFlagBits{0}) |
                 ImageUsageFlagBits::eSampled,
             }
         ),

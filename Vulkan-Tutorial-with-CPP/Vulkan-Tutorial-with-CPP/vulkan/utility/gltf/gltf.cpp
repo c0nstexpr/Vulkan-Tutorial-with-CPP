@@ -1,10 +1,15 @@
 #define TINYGLTF_IMPLEMENTATION
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-
 #include "gltf.h"
 
 namespace vulkan::utility
 {
+    gltf_model::texture::texture(const tinygltf::Image& gltf_image, const tinygltf::Sampler& sampler) noexcept:
+        extent(static_cast<uint32_t>(gltf_image.width), static_cast<uint32_t>(gltf_image.height)),
+        mip_levels(
+            static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height))) + 1.0)
+        ),
+        sampler(sampler) {}
+
     gltf_model::material::material(const tinygltf::Material& material, const vector<texture>& textures) noexcept
     {
         const auto get_texture_func = [&textures, &material](
@@ -135,10 +140,10 @@ namespace vulkan::utility
         }
     }
 
-    gltf_model::primitive::primitive(
+    void gltf_model::primitive::initialize_vertices(
         const tinygltf::Primitive& gltf_primitive,
         const tinygltf::Model& gltf_model
-    ) noexcept
+    )
     {
         vector<decltype(vertex::position)> positions;
         vector<decltype(vertex::normal)> normals;
@@ -169,17 +174,31 @@ namespace vulkan::utility
 
                 return pair{ptr, ptr + accessor.count * type_size} |
                     boost::adaptors::strided(
-                        accessor.ByteStride(buffer_view) + type_size
+                        //abandon accessor.ByteStride() to avoid compilation error;
+                        [&accessor,&buffer_view]() -> size_t
+                        {
+                            const auto component_size_in_bytes =
+                                tinygltf::GetComponentSizeInBytes(accessor.componentType);
+                            const auto type_size_in_bytes = tinygltf::GetTypeSizeInBytes(accessor.type);
+
+                            if(component_size_in_bytes <= 0) { return 0; }
+
+                            return buffer_view.byteStride % component_size_in_bytes ?
+                                buffer_view.byteStride :
+                                type_size_in_bytes <= 0 ?
+                                0 :
+                                component_size_in_bytes * type_size_in_bytes;
+                        }()
                     );
             }
             return boost::strided_range<const pair<
                 decltype(gltf_model.buffers.front().data)::const_pointer,
-                decltype(gltf_model.buffers.front().data)::const_pointer>>{0,pair{nullptr,nullptr}};
+                decltype(gltf_model.buffers.front().data)::const_pointer>>{0, pair{nullptr, nullptr}};
         };
 
         {
             const auto& strided_range =
-                get_value_ptr_func(sizeof decltype(positions)::value_type, "POSITION");
+                get_value_ptr_func(sizeof(decltype(positions)::value_type), "POSITION");
             positions = {
                 reinterpret_cast<decltype(positions)::const_pointer>(&*strided_range.begin()),
                 reinterpret_cast<decltype(positions)::const_pointer>(&*strided_range.end())
@@ -187,7 +206,7 @@ namespace vulkan::utility
         }
 
         {
-            const auto& strided_range = get_value_ptr_func(sizeof decltype(normals)::value_type, "NORMAL");
+            const auto& strided_range = get_value_ptr_func(sizeof(decltype(normals)::value_type), "NORMAL");
             normals = {
                 reinterpret_cast<decltype(normals)::const_pointer>(&*strided_range.begin()),
                 reinterpret_cast<decltype(normals)::const_pointer>(&*strided_range.end())
@@ -195,7 +214,7 @@ namespace vulkan::utility
         }
 
         {
-            const auto& strided_range = get_value_ptr_func(sizeof decltype(uv0_s)::value_type, "TEXCOORD_0");
+            const auto& strided_range = get_value_ptr_func(sizeof(decltype(uv0_s)::value_type), "TEXCOORD_0");
             uv0_s = {
                 reinterpret_cast<decltype(uv0_s)::const_pointer>(&*strided_range.begin()),
                 reinterpret_cast<decltype(uv0_s)::const_pointer>(&*strided_range.end())
@@ -203,7 +222,7 @@ namespace vulkan::utility
         }
 
         {
-            const auto& strided_range = get_value_ptr_func(sizeof decltype(uv1_s)::value_type, "TEXCOORD_1");
+            const auto& strided_range = get_value_ptr_func(sizeof(decltype(uv1_s)::value_type), "TEXCOORD_1");
             uv1_s = {
                 reinterpret_cast<decltype(uv1_s)::const_pointer>(&*strided_range.begin()),
                 reinterpret_cast<decltype(uv1_s)::const_pointer>(&*strided_range.end())
@@ -211,7 +230,7 @@ namespace vulkan::utility
         }
 
         {
-            const auto& strided_range = get_value_ptr_func(sizeof decltype(joints)::value_type, "JOINTS_0");
+            const auto& strided_range = get_value_ptr_func(sizeof(decltype(joints)::value_type), "JOINTS_0");
             joints = {
                 reinterpret_cast<decltype(joints)::const_pointer>(&*strided_range.begin()),
                 reinterpret_cast<decltype(joints)::const_pointer>(&*strided_range.end())
@@ -219,7 +238,7 @@ namespace vulkan::utility
         }
 
         {
-            const auto& strided_range = get_value_ptr_func(sizeof decltype(weights)::value_type, "WEIGHTS_0");
+            const auto& strided_range = get_value_ptr_func(sizeof(decltype(weights)::value_type), "WEIGHTS_0");
             weights = {
                 reinterpret_cast<decltype(weights)::const_pointer>(&*strided_range.begin()),
                 reinterpret_cast<decltype(weights)::const_pointer>(&*strided_range.end())
@@ -256,16 +275,16 @@ namespace vulkan::utility
             decltype(joints)::reference joint,
             decltype(weights)::reference weight
         )
-        {
-            vertex = {
-                position,
-                normal,
-                uv0,
-                uv1,
-                joint,
-                weight
-            };
-        },
+            {
+                vertex = {
+                    position,
+                    normal,
+                    uv0,
+                    uv1,
+                    joint,
+                    weight
+                };
+            },
             vertices.begin(),
             vertices.end(),
             positions.begin(),
@@ -277,42 +296,96 @@ namespace vulkan::utility
         );
     }
 
+    void gltf_model::primitive::initialize_indices(
+        const tinygltf::Primitive& gltf_primitive,
+        const tinygltf::Model& gltf_model
+    )
+    {
+        if(gltf_primitive.indices == -1) return;
+
+        const auto& accessor = gltf_model.accessors[gltf_primitive.indices];
+        const auto& buffer_view = gltf_model.bufferViews[accessor.bufferView];
+        const auto& buffer = gltf_model.buffers[buffer_view.buffer].data;
+        const auto& buffer_valid_ptr = &buffer[accessor.byteOffset + buffer_view.byteOffset];
+
+        switch(accessor.componentType)
+        {
+        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+        {
+            const auto ptr = reinterpret_cast<const uint32_t*>(buffer_valid_ptr);
+            indices = {ptr, ptr + accessor.count};
+        }
+        break;
+        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+        {
+            const auto ptr = reinterpret_cast<const uint16_t*>(buffer_valid_ptr);
+            indices = {ptr, ptr + accessor.count};
+        }
+        break;
+        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+        {
+            const auto ptr = reinterpret_cast<const uint8_t*>(buffer_valid_ptr);
+            indices = {ptr, ptr + accessor.count};
+        }
+        break;
+        default: break;
+        }
+    }
+
+    gltf_model::primitive::primitive(
+        const tinygltf::Primitive& gltf_primitive,
+        struct material material,
+        const tinygltf::Model& gltf_model
+    ):material(std::move(material))
+    {
+        initialize_vertices(gltf_primitive, gltf_model);
+        initialize_indices(gltf_primitive, gltf_model);
+    }
+
     pair<vec3, vec3> gltf_model::mesh::get_bounding() const
     {
+        min(vec3{},vec3{});
         return {
             std::min_element(
                 primitives.cbegin(),
                 primitives.cend(),
                 [](decltype(primitives)::const_reference left,decltype(primitives)::const_reference right)
                 {
-                    return min(left.bounding.first, right.bounding.first);
+                    return min(left.bounding.first, right.bounding.first) == left.bounding.first ? true : false;
                 }
             )->bounding.first,
-            std::min_element(
+            std::max_element(
                 primitives.cbegin(),
                 primitives.cend(),
                 [](decltype(primitives)::const_reference left,decltype(primitives)::const_reference right)
                 {
-                    return max(left.bounding.first, right.bounding.first);
+                    return max(left.bounding.first, right.bounding.first) == left.bounding.first ? true : false;
                 }
             )->bounding.second
         };
     }
 
-    gltf_model::mesh::mesh() noexcept = default;
-
-    gltf_model::mesh::mesh(const tinygltf::Mesh& gltf_mesh, const tinygltf::Model& model) noexcept:
+    gltf_model::mesh::mesh(
+        const tinygltf::Mesh& gltf_mesh,
+        const tinygltf::Model& model,
+        vector<material> materials
+    ):
         primitives(
             ::utility::container_transform<decltype(primitives)>(
-                gltf_mesh.primitives.cbegin(),
-                [&model](decltype(gltf_mesh.primitives)::const_reference gltf_primitive)
+                gltf_mesh.primitives,
+                [&model, &materials](decltype(gltf_mesh.primitives)::const_reference gltf_primitive)
                 {
-                    return primitive{gltf_primitive, model};
+                    return primitive{gltf_primitive, std::move(materials[gltf_primitive.material]), model};
                 }
             )
-        ) { }
+        ) {}
 
-    gltf_model::node::node(const int index, const tinygltf::Node& gltf_node) noexcept:
+    gltf_model::node::node(
+        const int index,
+        const tinygltf::Node& gltf_node,
+        const tinygltf::Model& gltf_model,
+        vector<material> materials
+    ):
         index(index),
         name(gltf_node.name),
         skin_index(gltf_node.skin),
@@ -335,7 +408,8 @@ namespace vulkan::utility
             gltf_node.matrix.size() == 16 ?
             make_mat4(reinterpret_cast<const decltype(matrix)::value_type*>(gltf_node.matrix.data())) :
             decltype(matrix){1}
-        ) { }
+        ),
+        mesh({gltf_model.meshes[gltf_node.mesh], gltf_model, std::move(materials)}) {}
 
     gltf_model::skin::skin() noexcept = default;
 
@@ -352,10 +426,10 @@ namespace vulkan::utility
         joints(skin.joints.size())
     {
         std::transform(
-            joints.begin(),
-            joints.end(),
             skin.joints.cbegin(),
-            [&nodes](decltype(*skin.joints.cbegin()) joint) { return &nodes[joint]; }
+            skin.joints.cend(),
+            joints.begin(),
+            [&nodes](decltype(skin.joints)::const_reference joint) { return &nodes[joint]; }
         );
 
         if(matrices_tuple)

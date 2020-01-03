@@ -2,8 +2,6 @@
 
 namespace vulkan::utility
 {
-    constexpr gltf_model::sampler::sampler() noexcept = default;
-
     constexpr gltf_model::sampler::sampler(const tinygltf::Sampler& sampler) noexcept:
         mag_filter(get_vk_filter_from_gltf(sampler.magFilter)),
         min_filter(get_vk_filter_from_gltf(sampler.minFilter)),
@@ -35,26 +33,4 @@ namespace vulkan::utility
         default: throw std::invalid_argument{"unknown node mode"};
         }
     }
-
-    constexpr gltf_model::texture::texture() = default;
-
-    constexpr gltf_model::texture::texture(const tinygltf::Image& gltf_image) noexcept:
-        extent(static_cast<uint32_t>(gltf_image.width), static_cast<uint32_t>(gltf_image.height)),
-        mip_levels(
-            static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height))) + 1.0)
-        ) {}
-
-    constexpr gltf_model::texture::texture(const tinygltf::Image& gltf_image, const tinygltf::Sampler& sampler):
-        extent(static_cast<uint32_t>(gltf_image.width), static_cast<uint32_t>(gltf_image.height)),
-        mip_levels(
-            static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height))) + 1.0)
-        ),
-        sampler(sampler) {}
-
-    constexpr gltf_model::material::material() noexcept = default;
-
-    constexpr gltf_model::primitive::primitive() noexcept = default;
-
-    constexpr gltf_model::node::node() = default;
-
 }

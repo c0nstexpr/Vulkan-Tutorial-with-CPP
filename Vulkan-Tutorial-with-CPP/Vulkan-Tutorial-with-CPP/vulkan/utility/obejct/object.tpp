@@ -88,7 +88,10 @@ namespace vulkan::utility
 
     template<typename HandleType>
     template<typename PoolObjectRangeType>
-    void pool_object<HandleType>::element_objects_reset(const object<owner_type>& owner_object, PoolObjectRangeType& range)
+    void pool_object<HandleType>::element_objects_reset(
+        const object<owner_type>& owner_object,
+        PoolObjectRangeType& range
+    )
     {
         using range_element_type = typename PoolObjectRangeType::value_type;
 
@@ -101,7 +104,7 @@ namespace vulkan::utility
         {
             owner_object->free(range.front().getPool(), ::utility::container_transform<vector<element_handle_t>>(
                 range,
-                [](const auto& object) { return *object; }
+                [](const object<element_handle_t>& object) { return *object; }
             ), owner_object.dispatch());
             for(auto& object : range) *object = nullptr;
         }

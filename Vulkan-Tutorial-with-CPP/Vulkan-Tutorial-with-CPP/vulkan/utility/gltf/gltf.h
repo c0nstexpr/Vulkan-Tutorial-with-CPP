@@ -1,8 +1,13 @@
 #pragma once
 
-#include <vulkan/utility/utility.h>
-#include <tiny_gltf.h>
+#include "vulkan/utility/utility.h"
 #include <boost/range/adaptor/strided.hpp>
+#include <nlohmann/json.hpp>
+
+#define TINYGLTF_NO_STB_IMAGE
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NO_INCLUDE_JSON
+#include <tiny_gltf.h>
 
 namespace vulkan::utility
 {
@@ -18,7 +23,7 @@ namespace vulkan::utility
             SamplerAddressMode address_mode_v = SamplerAddressMode::eRepeat;
             SamplerAddressMode address_mode_w = SamplerAddressMode::eRepeat;
 
-            constexpr sampler() noexcept;
+            constexpr sampler() noexcept = default;
             constexpr sampler(const tinygltf::Sampler&) noexcept;
 
             static constexpr Filter get_vk_filter_from_gltf(const int);
@@ -36,9 +41,8 @@ namespace vulkan::utility
             sampler_object::info_type sampler_create_info;
             sampler sampler;
 
-            constexpr texture() noexcept;
-            constexpr texture(const tinygltf::Image&) noexcept;
-            constexpr texture(const tinygltf::Image&, const tinygltf::Sampler&) noexcept;
+            constexpr texture() noexcept = default;
+            texture(const tinygltf::Image&, const tinygltf::Sampler& = {}) noexcept;
         };
 
         struct material
@@ -61,11 +65,11 @@ namespace vulkan::utility
 
             optional<texture> diffuse_texture;
 
-            vec4 base_color_factor = vec4{1};
-            vec4 emissive_factor= vec4{1};
-            vec4 diffuse_factor = vec4{1};
+            vec4 base_color_factor{1};
+            vec4 emissive_factor{1};
+            vec4 diffuse_factor{1};
 
-            vec3 specular_factor = vec4{1};
+            vec3 specular_factor{1};
 
             float roughness_factor = 1;
             float metallic_factor = 1;
@@ -73,7 +77,7 @@ namespace vulkan::utility
 
             alpha_mode alpha_mode = alpha_mode::opaque;
 
-            constexpr material() noexcept;
+            constexpr material() noexcept = default;
 
             material(const tinygltf::Material&, const vector<texture>&) noexcept;
         };
@@ -90,17 +94,20 @@ namespace vulkan::utility
                 vec4 weight;
             };
 
-		    uint32_t index_count;
-		    uint32_t vertex_count;
-            optional<material> material;
+            uint32_t index_count;
+            uint32_t vertex_count;
+            material material;
 
             vector<vertex> vertices;
+            vector<uint32_t> indices;
 
-		    pair<vec3,vec3> bounding;
+            pair<vec3, vec3> bounding;
 
-            constexpr primitive() noexcept;
+            constexpr primitive() noexcept = default;
 
-            primitive(const tinygltf::Primitive&,const tinygltf::Model&) noexcept;
+            void initialize_vertices(const tinygltf::Primitive&, const tinygltf::Model&);
+            void initialize_indices(const tinygltf::Primitive&, const tinygltf::Model&);
+            primitive(const tinygltf::Primitive&, struct material, const tinygltf::Model&);
         };
 
         struct mesh
@@ -109,9 +116,9 @@ namespace vulkan::utility
 
             pair<vec3, vec3> get_bounding() const;
 
-            mesh() noexcept;
+            mesh() noexcept = default;
 
-            mesh(const tinygltf::Mesh&, const tinygltf::Model&);
+            mesh(const tinygltf::Mesh&, const tinygltf::Model&, vector<material>);
         };
 
         struct skin;
@@ -131,13 +138,13 @@ namespace vulkan::utility
             {
                 mat4 matrix;
                 array<mat4, 128> joints;
-            } ;
+            };
 
             optional<mesh> mesh;
 
-            constexpr node() noexcept;
+            node() noexcept = default;
 
-            node(const int index, const tinygltf::Node&) noexcept;
+            node(const int, const tinygltf::Node&, const tinygltf::Model&, vector<material>);
         };
 
         struct skin
@@ -153,6 +160,7 @@ namespace vulkan::utility
                 const tinygltf::Skin&,
                 const vector<node>&,
                 const optional<tuple<const tinygltf::Accessor*, const tinygltf::BufferView*, const tinygltf::Buffer*>>&
+            
             )
             noexcept;
         };
@@ -165,7 +173,6 @@ namespace vulkan::utility
     public:
         gltf_model(const path&);
     };
-
 }
 
 #include "gltf.tpp"
