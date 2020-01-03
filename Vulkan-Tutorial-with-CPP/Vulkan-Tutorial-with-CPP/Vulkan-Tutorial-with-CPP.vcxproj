@@ -176,6 +176,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="utility\utility.cpp" />
+    <ClCompile Include="vulkan\utility\gltf\gltf.cpp" />
     <ClCompile Include="vulkan\utility\info\info.cpp" />
     <ClCompile Include="vulkan\utility\obejct\image.cpp" />
     <ClCompile Include="vulkan\utility\obejct\static_memory.cpp" />
@@ -186,11 +187,10 @@
     <ClCompile Include="vulkan_sample.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="resource\shaders\shader.frag" />
-    <None Include="resource\shaders\shader.vert" />
     <None Include="utility\property.tpp" />
     <None Include="utility\utility.tpp" />
     <None Include="vulkan\utility\constant\constant.tpp" />
+    <None Include="vulkan\utility\gltf\gltf.tpp" />
     <None Include="vulkan\utility\info\info.tpp" />
     <None Include="vulkan\utility\obejct\image.tpp" />
     <None Include="vulkan\utility\obejct\static_memory.tpp" />
@@ -207,6 +207,7 @@
     <ClInclude Include="utility\type_traits.h" />
     <ClInclude Include="utility\utility.h" />
     <ClInclude Include="vulkan\utility\constant\constant.h" />
+    <ClInclude Include="vulkan\utility\gltf\gltf.h" />
     <ClInclude Include="vulkan\utility\info\info.h" />
     <ClInclude Include="vulkan\utility\obejct\image.h" />
     <ClInclude Include="vulkan\utility\obejct\static_memory.h" />
@@ -218,12 +219,6 @@
     <ClInclude Include="vulkan\utility\utility.h" />
     <ClInclude Include="vulkan\utility\utility_core.h" />
     <ClInclude Include="vulkan_sample.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="resource\models\chalet.jpg" />
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="resource\models\chalet.obj" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

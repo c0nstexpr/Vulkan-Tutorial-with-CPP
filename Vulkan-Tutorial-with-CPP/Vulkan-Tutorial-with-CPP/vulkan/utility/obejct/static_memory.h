@@ -40,9 +40,9 @@ namespace vulkan::utility
     public:
         using type_list = type_list<Types...>;
 
-        static constexpr auto host_memory_property =
-            MemoryPropertyFlagBits::eHostVisible |
-            (Cached ? MemoryPropertyFlagBits::eHostCached : MemoryPropertyFlagBits{});
+        static constexpr auto host_memory_property = MemoryPropertyFlagBits::eHostVisible | (Cached ?
+            MemoryPropertyFlagBits::eHostCached :
+            MemoryPropertyFlagBits{});
 
         static constexpr auto device_memory_property = MemoryPropertyFlagBits::eDeviceLocal;
 
@@ -54,54 +54,54 @@ namespace vulkan::utility
         template<auto Index>
         using type = typename type_list::template type<Index>;
 
-        template<size_t... Counts>
-        class array_values
+        template<template<typename T> typename RangeType>
+        class base_array_values
         {
         public:
-            static constexpr array<size_t, type_list::size> counts = {Counts...};
-            static_assert(type_list::size == counts.size(), "incompatible size");
-
             template<typename T>
-            using value_type = array<T, counts[type_index<T>]>;
-
+            using value_type = RangeType<T>;
         private:
             tuple<value_type<Types>...> type_values_;
 
             const device_object* device_ = nullptr;
 
+            array<size_t, type_list::size> sizes_;
+
             array<buffer_object, type_list::size> device_local_buffers_;
+
             device_memory_object device_local_memory_;
 
             array<buffer_object, type_list::size> host_buffers_;
+
             device_memory_object host_memory_;
 
             array<DeviceSize, type_list::size> type_offsets_{};
 
             void generate_buffer_info(const array<BufferUsageFlags, type_list::size>&);
-
             void generate_memory_info(const PhysicalDevice&);
-
             void bind_buffer_memory() const;
 
             template<typename T, typename Op = empty_type>
-            void write_impl(value_type<T>, const Op & = {});
-
-            array<size_t, type_list::size> required_sizes_ = type_sizes;
+            void write_impl(value_type<T>, const Op& = {});
 
         public:
-            array_values() = default;
-
-            array_values(
+            base_array_values() = default;
+            base_array_values(
                 const device_object&,
                 const array<BufferUsageFlags, type_list::size>&,
-                const initializer_list<pair<size_t, size_t>> = {}
-            );
+                const decltype(sizes_)&
 
-            array_values(
+
+            
+            );
+            base_array_values(
                 const PhysicalDevice&,
                 const device_object&,
                 const array<BufferUsageFlags, type_list::size>&,
-                const initializer_list<pair<size_t, size_t>> = {}
+                const decltype(sizes_)&
+
+
+            
             );
 
             void initialize(const PhysicalDevice&);
@@ -110,7 +110,7 @@ namespace vulkan::utility
             void write(value_type<T> ...);
 
             template<typename T, typename Op = empty_type>
-            void write(value_type<T>, const Op & = {});
+            void write(value_type<T>, const Op& = {});
 
             template<typename...>
             void flush();
@@ -124,6 +124,37 @@ namespace vulkan::utility
             constexpr const auto& host_buffer(const size_t i) const;
             constexpr const auto& device_local_memory() const;
             constexpr const auto& host_memory() const;
+        };
+
+    private:
+        template<size_t... Counts>
+        struct array_values_type_traits
+        {
+            static constexpr array<size_t, type_list::size> counts = {Counts...};
+            static_assert(type_list::size == counts.size(), "incompatible size");
+
+            template<typename T>
+            using value_type = array<T, counts[type_index<T>]>;
+        };
+
+    public:
+        template<size_t... Counts>
+        class array_values : public base_array_values<array_values_type_traits<Counts...>::template value_type>
+        {
+            using traits = array_values_type_traits<Counts...>;
+
+        public:
+            using base = base_array_values<traits::template value_type>;
+
+            array_values() = default;
+            array_values(const device_object&, const array<BufferUsageFlags, type_list::size>&);
+            array_values(const PhysicalDevice&, const device_object&, const array<BufferUsageFlags, type_list::size>&);
+        };
+
+        class vector_values : public base_array_values<vector>
+        {
+        public:
+            using base = base_array_values<vector>;
         };
     };
 }

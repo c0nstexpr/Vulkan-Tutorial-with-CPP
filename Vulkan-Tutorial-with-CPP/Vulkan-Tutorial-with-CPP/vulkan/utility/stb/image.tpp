@@ -36,6 +36,7 @@ namespace vulkan::utility::stb
 			&real_channel,
 			static_cast<int>(channel_type)
 		);
+		if(!ptr) throw std::runtime_error("cannot open image file:" + path.string());
 		*this = image{ptr, static_cast<size_t>(width), static_cast<size_t>(height), channel{real_channel}};
 		stbi_image_free(ptr);
 	}

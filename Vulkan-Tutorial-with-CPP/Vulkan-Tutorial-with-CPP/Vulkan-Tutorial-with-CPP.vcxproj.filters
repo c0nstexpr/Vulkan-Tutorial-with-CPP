@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="资源文件\shaders">
-      <UniqueIdentifier>{c6d301f5-8e05-4183-a4c0-373406dd3148}</UniqueIdentifier>
-    </Filter>
     <Filter Include="头文件\vulkan">
       <UniqueIdentifier>{fe8ee6d7-fde3-4e2c-9cbc-4a78559bbeb5}</UniqueIdentifier>
     </Filter>
@@ -64,8 +61,11 @@
     <Filter Include="源文件\vulkan\utility\shaderc">
       <UniqueIdentifier>{96e1fd75-593b-4723-892f-2675f2b8d6f7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="资源文件\models">
-      <UniqueIdentifier>{ab35fdb0-3080-4e01-be9d-314a1f56dfb1}</UniqueIdentifier>
+    <Filter Include="源文件\vulkan\utility\gltf">
+      <UniqueIdentifier>{f4fe06bf-a6f6-4f5d-ab52-4e73691fff8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\vulkan\utility\gltf">
+      <UniqueIdentifier>{803e04db-4458-4da8-b61a-48a44ad8d2d3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -99,14 +99,11 @@
     <ClCompile Include="vulkan\utility\obejct\static_memory.cpp">
       <Filter>源文件\vulkan\utility\object</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan\utility\gltf\gltf.cpp">
+      <Filter>源文件\vulkan\utility\gltf</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="resource\shaders\shader.vert">
-      <Filter>资源文件\shaders</Filter>
-    </None>
-    <None Include="resource\shaders\shader.frag">
-      <Filter>资源文件\shaders</Filter>
-    </None>
     <None Include="vulkan\utility\obejct\object.tpp">
       <Filter>头文件\vulkan\utility\object</Filter>
     </None>
@@ -136,6 +133,9 @@
     </None>
     <None Include="vulkan\utility\obejct\image.tpp">
       <Filter>头文件\vulkan\utility\object</Filter>
+    </None>
+    <None Include="vulkan\utility\gltf\gltf.tpp">
+      <Filter>头文件\vulkan\utility\gltf</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -193,15 +193,8 @@
     <ClInclude Include="vulkan\utility\obejct\static_memory.h">
       <Filter>头文件\vulkan\utility\object</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="resource\models\chalet.jpg">
-      <Filter>资源文件\models</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="resource\models\chalet.obj">
-      <Filter>资源文件\models</Filter>
-    </Object>
+    <ClInclude Include="vulkan\utility\gltf\gltf.h">
+      <Filter>头文件\vulkan\utility\gltf</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

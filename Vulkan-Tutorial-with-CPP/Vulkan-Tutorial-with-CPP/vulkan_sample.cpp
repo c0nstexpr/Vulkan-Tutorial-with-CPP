@@ -21,14 +21,14 @@ namespace vulkan
             {
                 {},
                 {
-                    DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | DebugUtilsMessageSeverityFlagBitsEXT::
-                    eWarning | DebugUtilsMessageSeverityFlagBitsEXT::eError
+                    DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                    DebugUtilsMessageSeverityFlagBitsEXT::eError
                 },
                 {
-                    DebugUtilsMessageTypeFlagBitsEXT::eGeneral | DebugUtilsMessageTypeFlagBitsEXT::
-                    ePerformance | DebugUtilsMessageTypeFlagBitsEXT::eValidation
+                    DebugUtilsMessageTypeFlagBitsEXT::eGeneral | DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
+                    DebugUtilsMessageTypeFlagBitsEXT::eValidation
                 },
-            debug_callback
+                debug_callback
             }
         };
     }
@@ -58,7 +58,8 @@ namespace vulkan
                 layer_names,
                 enumerateInstanceLayerProperties(DispatchLoaderStatic{}),
                 [](const auto& layer, const auto& p)-> bool { return layer == p.layerName; }
-            )) throw std::runtime_error("validation layers requested, but not available!");
+            ))
+                throw std::runtime_error("validation layers requested, but not available!");
             generate_debug_messenger_create_info();
             info.pNext = &debug_messenger_.info();
             ext_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -67,14 +68,15 @@ namespace vulkan
             ext_names,
             enumerateInstanceExtensionProperties(nullptr, DispatchLoaderStatic{}),
             [](const auto& layer, const auto& p)-> bool { return layer == p.extensionName; }
-        )) throw std::runtime_error("requested instance extension is not available!");
+        ))
+            throw std::runtime_error("requested instance extension is not available!");
         instance_ = instance_type{
             instance_info_type{
-            info_proxy<ApplicationInfo>{"Hello Vulkan", "No Engine"},
-            std::move(ext_names),
-            std::move(layer_names),
-            std::move(info)
-        }
+                info_proxy<ApplicationInfo>{"Hello Vulkan", "No Engine"},
+                std::move(ext_names),
+                std::move(layer_names),
+                std::move(info)
+            }
         };
     }
 
@@ -91,10 +93,7 @@ namespace vulkan
         surface_ = surface_type{surface_info_type{window_}};
     }
 
-    void vulkan_sample::initialize_debug_messenger()
-    {
-        if constexpr(is_debug) debug_messenger_.initialize(instance_);
-    }
+    void vulkan_sample::initialize_debug_messenger() { if constexpr(is_debug) debug_messenger_.initialize(instance_); }
 
     void vulkan_sample::initialize_surface()
     {
@@ -107,28 +106,24 @@ namespace vulkan
         const surface_object& surface_object
     )
     {
-        if(physical_device.getProperties(instance_.dispatch()).deviceType ==
-            PhysicalDeviceType::eDiscreteGpu)
+        if(physical_device.getProperties(instance_.dispatch()).deviceType == PhysicalDeviceType::eDiscreteGpu)
         {
             size_t i = 0;
             for(const auto& p : physical_device.getQueueFamilyProperties(instance_.dispatch()))
                 if(p.queueCount != 0)
                 {
                     bool done = true;
-
                     if(graphics_queue_index_ == queue_family_ignore<>)
-                        if(p.queueFlags & QueueFlagBits::eGraphics)
-                            graphics_queue_index_ = static_cast<uint32_t>(i);
+                        if(p.queueFlags & QueueFlagBits::eGraphics) graphics_queue_index_ = static_cast<uint32_t>(i);
                         else done = false;
-
                     if(present_queue_index_ == queue_family_ignore<>)
                         if(physical_device.getSurfaceSupportKHR(
                             static_cast<uint32_t>(i),
                             *surface_object,
                             instance_.dispatch()
-                        )) present_queue_index_ = static_cast<uint32_t>(i);
+                        ))
+                            present_queue_index_ = static_cast<uint32_t>(i);
                         else done = false;
-
                     if(done) return true;
                     ++i;
                 }
@@ -151,18 +146,19 @@ namespace vulkan
         device_ = device_type{
             device_info_type{
                 {
-                    info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}},
-                    info_proxy<DeviceQueueCreateInfo>{ { 1 }, {{}, graphics_queue_index_}}
+                    info_proxy<DeviceQueueCreateInfo>{{1}, {{}, graphics_queue_index_}},
+                    info_proxy<DeviceQueueCreateInfo>{{1}, {{}, graphics_queue_index_}}
                 },
-            vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
-                    features
-        }
+                vector<string>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
+                features
+            }
         };
         if(!is_included(
             device_.info().extension_name_strs_property(),
             physical_device_->enumerateDeviceExtensionProperties(nullptr, DispatchLoaderStatic{}),
             [](const auto& layer, const auto& p)-> bool { return layer == p.extensionName; }
-        )) throw std::runtime_error("requested device extension is not available!");
+        ))
+            throw std::runtime_error("requested device extension is not available!");
     }
 
     void vulkan_sample::initialize_device()
@@ -181,14 +177,12 @@ namespace vulkan
     {
         using shader_module_type = decltype(vertex_shader_module_);
         using shader_module_info_type = shader_module_type::info_type;
-
         const auto shaders_path = path{"resource"} / "shaders";
         const auto vertex_shader_code_path = shaders_path / "shader.vert";
         const auto fragment_shader_code_path = shaders_path / "shader.frag";
         CompileOptions options;
         options.SetGenerateDebugInfo();
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
-
         cfin.open(vertex_shader_code_path);
         if(!cfin) throw std::runtime_error("failed to load vertex code file\n");
         csout << cfin.rdbuf();
@@ -200,11 +194,12 @@ namespace vulkan
                 options
             );
             if(status != shaderc_compilation_status_success)
-                throw std::runtime_error("vertex code compile failure\n" + error_str);
+                throw std::runtime_error(
+                    "vertex code compile failure\n" + error_str
+                );
             vertex_shader_module_ = shader_module_type{shader_module_info_type{std::move(spriv_code), {}}};
         }
         cfin.close();
-
         cfin.open(fragment_shader_code_path);
         if(!cfin) throw std::runtime_error("failed to load fragment code file\n");
         csout.str("");
@@ -217,7 +212,9 @@ namespace vulkan
                 options
             );
             if(status != shaderc_compilation_status_success)
-                throw std::runtime_error("fragment code compile failure\n" + error_str);
+                throw std::runtime_error(
+                    "fragment code compile failure\n" + error_str
+                );
             fragment_shader_module_ = shader_module_type{shader_module_info_type{std::move(spriv_code)}};
         }
         cfin.close();
@@ -230,31 +227,29 @@ namespace vulkan
         descriptor_set_layout_ = descriptor_set_layout_type{
             info_proxy<DescriptorSetLayoutCreateInfo>{
                 {
+                    DescriptorSetLayoutBinding{0, DescriptorType::eUniformBuffer, 1, ShaderStageFlagBits::eVertex},
                     DescriptorSetLayoutBinding{
-                        0,
-                        DescriptorType::eUniformBuffer,
-                        1,
-                        ShaderStageFlagBits::eVertex
-                    },
-                        DescriptorSetLayoutBinding{
                         1,
                         DescriptorType::eCombinedImageSampler,
                         1,
                         ShaderStageFlagBits::eFragment
                     }
                 }
-        }
+            }
         };
     }
 
     void vulkan_sample::generate_texture_image_create_info()
     {
-        texture_image_src_ = stb::image<channel::rgb_alpha>{path{"modules"} / "chalet.jpg"};
-        texture_image_ = {ImageType::e2D, Extent3D{
-            static_cast<uint32_t>(texture_image_src_.width()),
-            static_cast<uint32_t>(texture_image_src_.height()),
-            1
-        }};
+        texture_image_src_ = stb::image<channel::rgb_alpha>{path{"resource"} / "modules" / "tex_u1_v1.jpg"};
+        texture_image_ = {
+            ImageType::e2D,
+            Extent3D{
+                static_cast<uint32_t>(texture_image_src_.width()),
+                static_cast<uint32_t>(texture_image_src_.height()),
+                1
+            }
+        };
     }
 
     void vulkan_sample::generate_buffer_allocate_info()
@@ -328,16 +323,13 @@ namespace vulkan
                 vertex{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
                 vertex{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
                 vertex{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
                 vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
                 vertex{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
                 vertex{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
                 vertex{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
             }
         );
-
-        set_indices({0, 1, 2, 2, 3, 0,
-            4, 5, 6, 6, 7, 4});
+        set_indices({0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4});
     }
 
     void vulkan_sample::initialize_texture_sampler() { texture_sampler_.initialize(device_); }
@@ -369,7 +361,6 @@ namespace vulkan
     {
         using pipeline_layout_type = decltype(pipeline_layout_);
         using pipeline_layout_info_type = pipeline_layout_type::info_type;
-
         pipeline_layout_ = pipeline_layout_type{pipeline_layout_info_type{{*descriptor_set_layout_object}}};
     }
 
@@ -378,7 +369,6 @@ namespace vulkan
         using swapchain_type = decltype(swapchain_);
         using swapchain_info_type = decltype(swapchain_)::info_type;
         using set_type = decay_to_origin_t<decltype(swapchain_.info().queue_family_indices_set_property())>;
-
         const auto& formats = physical_device_->getSurfaceFormatsKHR(*surface_object, DispatchLoaderStatic{});
         const SurfaceFormatKHR required_format = []()
         {
@@ -387,8 +377,7 @@ namespace vulkan
             format_khr.colorSpace = ColorSpaceKHR::eSrgbNonlinear;
             return format_khr;
         }();
-        const auto available_format = std::find(formats.cbegin(), formats.cend(), required_format) == formats.
-            end() ?
+        const auto available_format = std::find(formats.cbegin(), formats.cend(), required_format) == formats.end() ?
             formats.front() :
             required_format;
         const auto& present_modes = physical_device_->getSurfacePresentModesKHR(
@@ -396,60 +385,46 @@ namespace vulkan
             DispatchLoaderStatic{}
         );
         static constexpr auto required_present_mode = PresentModeKHR::eFifo;
-        const auto present_mode = std::find(
-            present_modes.cbegin(),
-            present_modes.cend(),
-            required_present_mode
-        ) != present_modes.cend() ?
+        const auto present_mode = std::find(present_modes.cbegin(), present_modes.cend(), required_present_mode) !=
+            present_modes.cend() ?
             required_present_mode :
             PresentModeKHR::eFifo;
-        const auto& capabilities = physical_device_->getSurfaceCapabilitiesKHR(
-            *surface_object,
-            DispatchLoaderStatic{}
-        );
+        const auto& capabilities = physical_device_->getSurfaceCapabilitiesKHR(*surface_object, DispatchLoaderStatic{});
         const auto extent = capabilities.currentExtent.width == -1 ?
             Extent2D{width, height} :
             Extent2D{
-            std::clamp(
-                width,
-                capabilities.minImageExtent.width,
-                capabilities.maxImageExtent.width
-            ),
-            std::clamp(
-                height,
-                capabilities.minImageExtent.height,
-                capabilities.maxImageExtent.height
-            )
-        };
+                std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+                std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+            };
         auto sharing_mode = SharingMode::eConcurrent;
         set_type queue_indices;
-
         if(device_.info().queue_create_infos_set_property().size() > 1)
             for(const auto& info : device_.info().queue_create_infos_set_property())
-                queue_indices.insert(info.info.queueFamilyIndex);
+                queue_indices.insert(
+                    info.info.queueFamilyIndex
+                );
         else sharing_mode = SharingMode::eExclusive;
-
         swapchain_ = swapchain_type{
             swapchain_info_type{
-            std::move(queue_indices),
-            SwapchainCreateInfoKHR{
-                {},
-                *surface_,
-                std::min(capabilities.minImageCount + 1, capabilities.maxImageCount),
-                available_format.format,
-                available_format.colorSpace,
-                extent,
-                1,
-                ImageUsageFlagBits::eColorAttachment,
-                sharing_mode,
-                0,
-                nullptr,
-                capabilities.currentTransform,
-                CompositeAlphaFlagBitsKHR::eOpaque,
-                present_mode,
-                true,
-        }
-        }
+                std::move(queue_indices),
+                SwapchainCreateInfoKHR{
+                    {},
+                    *surface_,
+                    std::min(capabilities.minImageCount + 1, capabilities.maxImageCount),
+                    available_format.format,
+                    available_format.colorSpace,
+                    extent,
+                    1,
+                    ImageUsageFlagBits::eColorAttachment,
+                    sharing_mode,
+                    0,
+                    nullptr,
+                    capabilities.currentTransform,
+                    CompositeAlphaFlagBitsKHR::eOpaque,
+                    present_mode,
+                    true,
+                }
+            }
         };
     }
 
@@ -471,60 +446,59 @@ namespace vulkan
             const vector<Format>& formats,
             const ImageTiling tiling,
             const FormatFeatureFlags feature
-            )
-        {
-            for(const auto& f : formats)
+        )
             {
-                const auto& format_props = physical_device_->getFormatProperties(f, device_.dispatch());
-                switch(tiling)
+                for(const auto& f : formats)
                 {
-                case ImageTiling::eOptimal: if((format_props.optimalTilingFeatures & feature) == feature
-                    ) return f;
-                    break;
-                case ImageTiling::eLinear: if((format_props.linearTilingFeatures & feature) == feature
-                    ) return f;
-                    break;
-                default: break;
+                    const auto& format_props = physical_device_->getFormatProperties(f, device_.dispatch());
+                    switch(tiling)
+                    {
+                    case ImageTiling::eOptimal: if((format_props.optimalTilingFeatures & feature) == feature) return f;
+                        break;
+                    case ImageTiling::eLinear: if((format_props.linearTilingFeatures & feature) == feature) return f;
+                        break;
+                    default: break;
+                    }
                 }
-            }
-            throw std::runtime_error("failed to get supported format");
-        }(
-            {Format::eD32Sfloat, Format::eD32SfloatS8Uint, Format::eD24UnormS8Uint},
-            ImageTiling::eOptimal,
-            FormatFeatureFlagBits::eDepthStencilAttachment
+                throw std::runtime_error("failed to get supported format");
+            }(
+                {Format::eD32Sfloat, Format::eD32SfloatS8Uint, Format::eD24UnormS8Uint},
+                ImageTiling::eOptimal,
+                FormatFeatureFlagBits::eDepthStencilAttachment
             );
-
         depth_image_ = {format, ImageType::e2D, Extent3D{swapchain_object.info().info.imageExtent, 1}};
     }
 
     void vulkan_sample::generate_image_view_create_infos(const swapchain_object& swapchain_object)
     {
         using image_view_type = decltype(image_views_)::value_type;
-
         auto&& images = device_->getSwapchainImagesKHR(*swapchain_object, device_.dispatch());
-
         image_views_.resize(images.size());
         std::transform(
             images.begin(),
             images.end(),
             image_views_.begin(),
             [this, format = swapchain_object.info().info.imageFormat](decltype(*images.begin()) image)mutable
-        {
-            return image_view_type{
-                {
-                    {},
-                    std::move(image),
-                    ImageViewType::e2D,
-                    format,
-                    ComponentMapping{},
-                    ImageSubresourceRange{ImageAspectFlagBits::eColor, 0, 1, 0, 1}
-                }
-            };
-        }
+            {
+                return image_view_type{
+                    {
+                        {},
+                        std::move(image),
+                        ImageViewType::e2D,
+                        format,
+                        ComponentMapping{},
+                        ImageSubresourceRange{ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+                    }
+                };
+            }
         );
     }
 
-    void vulkan_sample::initialize_depth_image() { generate_depth_image_create_info(swapchain_); depth_image_.initialize(device_, *physical_device_); }
+    void vulkan_sample::initialize_depth_image()
+    {
+        generate_depth_image_create_info(swapchain_);
+        depth_image_.initialize(device_, *physical_device_);
+    }
 
     void vulkan_sample::initialize_image_views()
     {
@@ -539,7 +513,6 @@ namespace vulkan
     {
         using command_buffer_type = decltype(graphics_command_buffers_)::value_type;
         using command_buffer_info_type = command_buffer_type::info_type;
-
         graphics_command_buffers_.resize(image_view_objects.size());
         for(auto& buffer : graphics_command_buffers_)
             buffer = command_buffer_type{
@@ -548,7 +521,7 @@ namespace vulkan
                     CommandBufferLevel::ePrimary,
                     static_cast<decltype(buffer.info().commandBufferCount)>(graphics_command_buffers_.size())
                 }
-        };
+            };
     }
 
     void vulkan_sample::generate_render_pass_create_info(
@@ -571,7 +544,6 @@ namespace vulkan
             ImageLayout::eUndefined,
             ImageLayout::ePresentSrcKHR
         };
-
         AttachmentDescription depth_attachment = {
             {},
             depth_image.image().info().info.format,
@@ -583,17 +555,14 @@ namespace vulkan
             ImageLayout::eUndefined,
             ImageLayout::eDepthStencilAttachmentOptimal
         };
-
         AttachmentReference color_attachment_ref = {0, ImageLayout::eColorAttachmentOptimal};
         AttachmentReference depth_attachment_ref = {1, depth_attachment.finalLayout};
-
         auto subpass = info_proxy<SubpassDescription>{
             {},
             vector<AttachmentReference>{std::move(color_attachment_ref)},
             vector<AttachmentReference>{},
             std::move(depth_attachment_ref)
         };
-
         SubpassDependency dependency = {
             subpass_external<decltype(dependency.srcSubpass)>,
             0,
@@ -602,30 +571,32 @@ namespace vulkan
             AccessFlags{},
             AccessFlagBits::eColorAttachmentRead | AccessFlagBits::eColorAttachmentWrite,
         };
-
         render_pass_ = render_pass_type{
             render_pass_info_type{
                 {std::move(color_attachment), std::move(depth_attachment)},
                 vector<info_proxy<SubpassDescription>>{std::move(subpass)},
                 vector<SubpassDependency>{std::move(dependency)}
-        }
+            }
         };
     }
 
-    void vulkan_sample::generate_descriptor_pool_create_info(
-        const vector<image_view_object>& image_view_objects
-    )
+    void vulkan_sample::generate_descriptor_pool_create_info(const vector<image_view_object>& image_view_objects)
     {
         using descriptor_pool_type = decltype(descriptor_pool_);
         using descriptor_pool_info_type = descriptor_pool_type::info_type;
-
-        descriptor_pool_ = descriptor_pool_type{descriptor_pool_info_type{
-            {
-                DescriptorPoolSize{DescriptorType::eUniformBuffer, static_cast<uint32_t>(image_view_objects.size())},
-                DescriptorPoolSize{DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(image_view_objects.size())}
-            },
-            descriptor_pool_info_type::base_info_type{DescriptorPoolCreateFlagBits::eFreeDescriptorSet}
-        }};
+        descriptor_pool_ = descriptor_pool_type{
+            descriptor_pool_info_type{
+                {
+                    DescriptorPoolSize
+                    {DescriptorType::eUniformBuffer, static_cast<uint32_t>(image_view_objects.size())},
+                    DescriptorPoolSize{
+                        DescriptorType::eCombinedImageSampler,
+                        static_cast<uint32_t>(image_view_objects.size())
+                    }
+                },
+                descriptor_pool_info_type::base_info_type{DescriptorPoolCreateFlagBits::eFreeDescriptorSet}
+            }
+        };
     }
 
     void vulkan_sample::generate_sync_objects_create_info(const vector<image_view_object>& image_view_objects)
@@ -634,7 +605,6 @@ namespace vulkan
         using semaphore_info_type = semaphore_type::info_type;
         using fence_type = decltype(gpu_syn_)::value_type;
         using fence_info_type = fence_type::info_type;
-
         swapchain_image_syn_.resize(image_view_objects.size());
         render_syn_.resize(image_view_objects.size());
         gpu_syn_.resize(image_view_objects.size());
@@ -646,8 +616,7 @@ namespace vulkan
         generate_graphics_command_buffer_allocate_info(image_views_, graphics_command_pool_);
         graphics_command_buffers_ = graphics_command_pool_.create_element_objects(
             device_,
-            graphics_command_buffers_.
-            front().info()
+            graphics_command_buffers_.front().info()
         );
     }
 
@@ -685,28 +654,24 @@ namespace vulkan
             image_view_objects.cbegin(),
             image_view_objects.cend(),
             frame_buffers_.begin(),
-            [
-                this,
-                extent = swapchain_object.info().info.imageExtent,
-                render_pass = *render_pass_object,
-                depth_image_view = *depth_image.image_view()
-            ](const image_view_object& image_view)
-        {
-            return frame_buffer_type{
-                frame_buffer_info_type{
-                    {*image_view, depth_image_view},
-                    frame_buffer_info_type::base_info_type{
-                        {},
-                        render_pass,
-                        0,
-                        nullptr,
-                        extent.width,
-                        extent.height,
-                        1
+            [ this, extent = swapchain_object.info().info.imageExtent, render_pass = *render_pass_object,
+                depth_image_view = *depth_image.image_view() ](const image_view_object& image_view)
+            {
+                return frame_buffer_type{
+                    frame_buffer_info_type{
+                        {*image_view, depth_image_view},
+                        frame_buffer_info_type::base_info_type{
+                            {},
+                            render_pass,
+                            0,
+                            nullptr,
+                            extent.width,
+                            extent.height,
+                            1
+                        }
+                    }
+                };
             }
-            }
-            };
-        }
         );
     }
 
@@ -733,10 +698,7 @@ namespace vulkan
         };
         auto input_state = info_proxy<PipelineVertexInputStateCreateInfo>{
             {vertex::description},
-            {
-                vertex::attribute_descriptions.cbegin(),
-                vertex::attribute_descriptions.cend()
-            }
+            {vertex::attribute_descriptions.cbegin(), vertex::attribute_descriptions.cend()}
         };
         PipelineInputAssemblyStateCreateInfo input_assembly_state = {{}, PrimitiveTopology::eTriangleList};
         auto viewport_state = info_proxy<PipelineViewportStateCreateInfo>{
@@ -765,14 +727,10 @@ namespace vulkan
             0,
             1
         };
-        PipelineDepthStencilStateCreateInfo depth_stencil_state = {
-            {},
-            true,
-            true,
-            CompareOp::eLess
-        };
+        PipelineDepthStencilStateCreateInfo depth_stencil_state = {{}, true, true, CompareOp::eLess};
         auto color_blend_state = info_proxy<PipelineColorBlendStateCreateInfo>{
-            {{
+            {
+                {
                     false,
                     BlendFactor::eZero,
                     BlendFactor::eZero,
@@ -781,22 +739,19 @@ namespace vulkan
                     BlendFactor::eZero,
                     BlendOp::eAdd,
                     ColorComponentFlags{
-            ColorComponentFlagBits::eA |
-            ColorComponentFlagBits::eR |
-            ColorComponentFlagBits::eG |
-            ColorComponentFlagBits::eB
-        }
-                }},
+                        ColorComponentFlagBits::eA | ColorComponentFlagBits::eR | ColorComponentFlagBits::eG |
+                        ColorComponentFlagBits::eB
+                    }
+                }
+            },
             PipelineColorBlendStateCreateInfo{{}, false, LogicOp::eCopy, 0, nullptr, std::array<float, 4>{0}}
         };
         PipelineMultisampleStateCreateInfo multi_sample_state;
-
         info.renderPass = *render_pass_object;
         info.layout = *pipeline_layout_object;
-
         graphics_pipeline_ = graphics_pipeline_type{
             info_proxy<graphics_pipeline_create_info>{
-                { std::move(vertex_shader_stage), std::move(fragment_shader_stage) },
+                {std::move(vertex_shader_stage), std::move(fragment_shader_stage)},
                 {std::move(input_state)},
                 {std::move(input_assembly_state)},
                 {nullopt},
@@ -807,7 +762,7 @@ namespace vulkan
                 {std::move(color_blend_state)},
                 {nullopt},
                 {std::move(info)}
-        }
+            }
         };
     }
 
@@ -819,15 +774,14 @@ namespace vulkan
     {
         using descriptor_set_type = decltype(descriptor_sets_)::value_type;
         using descriptor_set_info_type = descriptor_set_type::info_type;
-
         descriptor_sets_.resize(image_view_objects.size());
         for(auto& descriptor_set : descriptor_sets_)
             descriptor_set = descriptor_set_type{
-            descriptor_set_info_type{
-                {image_view_objects.size(), *descriptor_set_layout_object},
-                descriptor_set_info_type::base_info_type{*descriptor_pool_object}
-        }
-        };
+                descriptor_set_info_type{
+                    {image_view_objects.size(), *descriptor_set_layout_object},
+                    descriptor_set_info_type::base_info_type{*descriptor_pool_object}
+                }
+            };
     }
 
     void vulkan_sample::initialize_frame_buffer()
@@ -843,25 +797,25 @@ namespace vulkan
             fragment_shader_module_,
             swapchain_,
             render_pass_,
-            pipeline_layout_);
+            pipeline_layout_
+        );
         graphics_pipeline_.initialize(device_);
     }
 
     void vulkan_sample::initialize_descriptor_sets()
     {
         generate_descriptor_set_allocate_info(image_views_, descriptor_set_layout_, descriptor_pool_);
-        descriptor_sets_ = descriptor_pool_.create_element_objects(
-            device_,
-            descriptor_sets_.front().info().info
-        );
+        descriptor_sets_ = descriptor_pool_.create_element_objects(device_, descriptor_sets_.front().info().info);
     }
 
     void vulkan_sample::submit_precondition_command()
     {
         const auto& front_command_buffer = *graphics_command_buffers_.front();
         auto& front_submit_info = submit_infos_.front();
+
         front_submit_info = {};
         front_submit_info.command_buffers_property = {front_command_buffer};
+
         command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eOneTimeSubmit};
 
         front_command_buffer.begin(command_buffer_begin_info_, device_.dispatch());
@@ -894,117 +848,104 @@ namespace vulkan
         render_pass_begin_infos_.resize(frame_buffers_.size());
         submit_infos_.resize(graphics_command_buffers_.size());
         present_infos_.resize(submit_infos_.size());
-
         submit_precondition_command();
 
         for(const auto& descriptor_set : descriptor_sets_)
-            device_->updateDescriptorSets({info_proxy<WriteDescriptorSet>{
+            device_->updateDescriptorSets(
+                {
+                    info_proxy<WriteDescriptorSet>{
+                        {},
+                        {{*transform_buffer_, 0, whole_size<decltype(DescriptorBufferInfo::range)>}},
+                        {},
+                        {*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
+                    },
+                    info_proxy<WriteDescriptorSet>{
+                        {{*texture_sampler_, *texture_image_.image_view(), ImageLayout::eShaderReadOnlyOptimal}},
+                        {},
+                        {},
+                        {*descriptor_set, 1, 0, 1, DescriptorType::eCombinedImageSampler}
+                    }
+                },
                 {},
-                {{*transform_buffer_, 0, whole_size<decltype(DescriptorBufferInfo::range)>}},
-                {},
-                {*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
-        }, info_proxy<WriteDescriptorSet>{
-            { { *texture_sampler_, * texture_image_.image_view(), ImageLayout::eShaderReadOnlyOptimal } },
-            {},
-            {},
-            {*descriptor_set, 1, 0, 1, DescriptorType::eCombinedImageSampler}
-        }}, {}, device_.dispatch());
+                device_.dispatch()
+            );
 
         command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
+
         graphics_queue_.waitIdle(device_.dispatch());
+
         std::for_each(
             graphics_command_buffers_.begin(),
             graphics_command_buffers_.end(),
             [this, index = size_t{0}](command_buffer_object& buffer)mutable
-        {
-            render_pass_begin_infos_[index] = info_proxy<RenderPassBeginInfo>{
-                {ClearColorValue{}, ClearDepthStencilValue{1, 1}},
-                RenderPassBeginInfo{
-                RenderPass{*render_pass_},
-                Framebuffer{*frame_buffers_[index]},
-                Rect2D{{0, 0}, {swapchain_.info().info.imageExtent}}
+            {
+                render_pass_begin_infos_[index] = info_proxy<RenderPassBeginInfo>{
+                    {ClearColorValue{}, ClearDepthStencilValue{1, 1}},
+                    RenderPassBeginInfo{
+                        RenderPass{*render_pass_},
+                        Framebuffer{*frame_buffers_[index]},
+                        Rect2D{{0, 0}, {swapchain_.info().info.imageExtent}}
+                    }
+                };
+
+                buffer->begin(command_buffer_begin_info_, device_.dispatch());
+                buffer->beginRenderPass(render_pass_begin_infos_[index], SubpassContents::eInline, device_.dispatch());
+
+                buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
+                buffer->bindVertexBuffers(
+                    0,
+                    {*transfer_memory_.device_local_buffer(vertices_buffer_index)},
+                    {0},
+                    device_.dispatch()
+                );
+                buffer->bindIndexBuffer(
+                    {*transfer_memory_.device_local_buffer(indices_buffer_index)},
+                    {0},
+                    index_type<std::decay_t<decltype(get_indices())>::value_type>,
+                    device_.dispatch()
+                );
+                buffer->bindDescriptorSets(
+                    PipelineBindPoint::eGraphics,
+                    *pipeline_layout_,
+                    0,
+                    *descriptor_sets_[index],
+                    {},
+                    device_.dispatch()
+                );
+
+                buffer->drawIndexed(static_cast<uint32_t>(get_indices().size()), 1, 0, 0, 0, device_.dispatch());
+
+                buffer->endRenderPass(device_.dispatch());
+                buffer->end(device_.dispatch());
+
+                submit_infos_[index] = info_proxy<SubmitInfo>{
+                    vector<Semaphore>{},
+                    PipelineStageFlagBits::eColorAttachmentOutput,
+                    vector<CommandBuffer>{*buffer},
+                    vector<Semaphore>{*render_syn_[index]}
+                };
+
+                present_infos_[index] = info_proxy<PresentInfoKHR>{
+                    submit_infos_[index].signal_semaphores_property,
+                    vector<SwapchainKHR>{*swapchain_},
+                    vector<uint32_t>{static_cast<uint32_t>(index)}
+                };
+                index++;
             }
-            };
-            buffer->begin(command_buffer_begin_info_, device_.dispatch());
-            buffer->beginRenderPass(
-                render_pass_begin_infos_[index],
-                SubpassContents::eInline,
-                device_.dispatch()
-            );
-            buffer->bindPipeline(
-                PipelineBindPoint::eGraphics,
-                *graphics_pipeline_,
-                device_.dispatch()
-            );
-            buffer->bindVertexBuffers(
-                0,
-                {
-                    *transfer_memory_.device_local_buffer(
-                        vertices_buffer_index
-                    )
-                },
-                {0},
-                device_.dispatch()
-            );
-            buffer->bindIndexBuffer(
-                {
-                    *transfer_memory_.device_local_buffer(
-                        indices_buffer_index
-                    )
-                },
-                {0},
-                index_type<std::decay_t<decltype(get_indices())>::value_type
-                >,
-                device_.dispatch()
-            );
-            buffer->bindDescriptorSets(
-                PipelineBindPoint::eGraphics,
-                *pipeline_layout_,
-                0,
-                *descriptor_sets_[index],
-                {},
-                device_.dispatch()
-            );
-            buffer->drawIndexed(
-                static_cast<uint32_t>(get_indices().size()),
-                1,
-                0,
-                0,
-                0,
-                device_.dispatch()
-            );
-            buffer->endRenderPass(device_.dispatch());
-            buffer->end(device_.dispatch());
-            submit_infos_[index] = info_proxy<SubmitInfo>{
-                vector<Semaphore>{},
-                PipelineStageFlagBits::eColorAttachmentOutput,
-                vector<CommandBuffer>{*buffer},
-                vector<Semaphore>{*render_syn_[index]}
-            };
-            present_infos_[index] = info_proxy<PresentInfoKHR>{
-                submit_infos_[index].signal_semaphores_property,
-                vector<SwapchainKHR>{*swapchain_},
-                vector<uint32_t>{static_cast<uint32_t>(index)}
-            };
-            index++;
-        }
         );
     }
 
     void vulkan_sample::initialize_vulkan()
     {
         static bool is_initialized = false;
-
         if(!is_initialized)
         {
             initialize_instance();
             initialize_debug_messenger();
             initialize_surface();
-
             initialize_physical_device();
             initialize_device();
             initialize_queue();
-
             initialize_shader_module();
             initialize_descriptor_set_layout();
             initialize_texture_image();
@@ -1027,22 +968,17 @@ namespace vulkan
             graphics_command_buffers_.clear();
             image_views_.clear();
             depth_image_ = {};
-
             pipeline_layout_ = nullptr;
             swapchain_ = nullptr;
         }
-
         initialize_pipeline_layout();
         initialize_swapchain();
-
         initialize_depth_image();
         initialize_image_views();
-
         initialize_graphics_command_buffer();
         initialize_render_pass();
         initialize_descriptor_pool();
         initialize_sync_objects();
-
         initialize_frame_buffer();
         initialize_graphics_pipeline();
         initialize_descriptor_sets();
@@ -1060,9 +996,7 @@ namespace vulkan
                 glfwWaitEvents();
             }
         }
-
         device_->waitIdle(device_.dispatch());
-
         initialize_vulkan();
     }
 
@@ -1081,8 +1015,8 @@ namespace vulkan
     )
     {
         const auto flag = DebugUtilsMessageSeverityFlagBitsEXT{flag_bits};
-        std::cerr << to_string(flag) << '\n' << to_string(DebugUtilsMessageTypeFlagsEXT{type_flags}) << '\n'
-            << "validation layer: " << p_callback_data->pMessage << '\n';
+        std::cerr << to_string(flag) << '\n' << to_string(DebugUtilsMessageTypeFlagsEXT{type_flags}) << '\n' <<
+            "validation layer: " << p_callback_data->pMessage << '\n';
         return flag == DebugUtilsMessageSeverityFlagBitsEXT::eError ? true : false;
     }
 
@@ -1110,10 +1044,7 @@ namespace vulkan
 
     void vulkan_sample::flush_transform_to_memory()
     {
-        device_->flushMappedMemoryRanges(
-            {{*transform_buffer_memory_, 0, whole_size<DeviceSize>}},
-            device_.dispatch()
-        );
+        device_->flushMappedMemoryRanges({{*transform_buffer_memory_, 0, whole_size<DeviceSize>}}, device_.dispatch());
     }
 
     void vulkan_sample::flush_to_memory()

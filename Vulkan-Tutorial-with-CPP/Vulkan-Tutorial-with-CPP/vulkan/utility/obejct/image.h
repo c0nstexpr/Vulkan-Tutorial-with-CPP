@@ -10,8 +10,7 @@ namespace vulkan::utility
         const device_object&,
         const vector<Image>&,
         const PhysicalDevice&,
-        const MemoryPropertyFlags
-    );
+        const MemoryPropertyFlags);
 
     void write_transfer_image_layout_command(
         const CommandBuffer,
@@ -44,12 +43,12 @@ namespace vulkan::utility
         constexpr texture_image(
             const ImageType,
             const Extent3D,
-            const optional< ImageCreateFlags> = {},
-            const optional< ComponentMapping> = {},
+            const optional<ImageCreateFlags>  = {},
+            const optional<ComponentMapping>  = {},
             const optional<
-            pair<decltype(ImageCreateInfo::mipLevels), decltype(ImageCreateInfo::arrayLayers)>
-            > & = nullopt,
-            const optional<SampleCountFlagBits> = SampleCountFlagBits::e1
+                pair<decltype(ImageCreateInfo::mipLevels), decltype(ImageCreateInfo::arrayLayers)>
+            >& = nullopt,
+            const optional<SampleCountFlagBits>  = SampleCountFlagBits::e1
         ) noexcept;
 
         void initialize(const device_object& device_object, const PhysicalDevice physical_device);
@@ -58,9 +57,12 @@ namespace vulkan::utility
             const device_object&,
             const constant::format_t<format_value>&,
             const constant::format_t<format_value>&
-        )  const;
+        ) const;
 
         void write_transfer_command(const device_object& device_object, const CommandBuffer&) const;
+
+
+        void write_blit_command(const device_object& device_object, const CommandBuffer&) const;
 
         constexpr const auto& buffer() const;
 
@@ -88,8 +90,7 @@ namespace vulkan::utility
         constexpr depth_image(
             const Format,
             const ImageType,
-            const Extent3D
-        ) noexcept;
+            const Extent3D) noexcept;
 
         void initialize(const device_object&, const PhysicalDevice);
 

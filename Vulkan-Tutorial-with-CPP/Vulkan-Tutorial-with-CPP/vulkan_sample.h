@@ -153,7 +153,7 @@ namespace vulkan
 
         static constexpr size_t vertices_buffer_index = 0;
         static constexpr size_t indices_buffer_index = 1;
-        static_memory<true, vertex, uint32_t>::array_values<8, 12> transfer_memory_;
+        static_memory<true,vertex, uint32_t>::array_values<8, 12> transfer_memory_;
 
         pipeline_layout_object pipeline_layout_;
 

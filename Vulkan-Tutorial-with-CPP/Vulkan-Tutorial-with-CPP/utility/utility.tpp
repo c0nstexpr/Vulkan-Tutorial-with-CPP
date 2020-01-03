@@ -30,9 +30,9 @@ namespace utility
 
 		const auto length = std::distance(begin, end);
 		if(length < 0)
-			throw std::invalid_argument("input range incorrect, end should larger than begin");
+			throw std::out_of_range("input range incorrect, end should larger than begin");
 		T t{static_cast<size_t>(length)};
-		std::transform(begin, end, t.begin(), [&op](decltype(*begin) element) { return op(element); });
+		std::transform(begin, end, t.begin(), [&op](decltype(*begin) element) { return op(std::forward(element)); });
 
 		return t;
 	}
