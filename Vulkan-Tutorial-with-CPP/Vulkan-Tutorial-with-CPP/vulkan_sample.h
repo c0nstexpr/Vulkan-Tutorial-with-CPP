@@ -36,6 +36,12 @@ namespace vulkan
         void generate_device_create_info();
         void initialize_device();
 
+        void generate_brdflut_image();
+        void generate_cubemaps();
+
+        void initialize_cubemaps();
+        void initialize_brdflut_image();
+
         void initialize_queue();
 
         void generate_shader_module_create_infos();
@@ -134,6 +140,15 @@ namespace vulkan
         Queue graphics_queue_;
         Queue present_queue_;
 
+        texture_image<Format::eR16G16Sfloat> brdflut_image_;
+        sampler_object brdflut_sampler_;
+
+        texture_image<Format::eR32G32B32A32Sfloat> irradiance_cube_image_;
+        sampler_object irradiance_cube_sampler_;
+
+        texture_image<Format::eR32G32B32A32Sfloat> pre_filtered_cube_image_;
+        sampler_object pre_filtered_cube_sampler_;
+
         swapchain_object swapchain_;
 
         vector<image_view_object> image_views_;
@@ -153,7 +168,7 @@ namespace vulkan
 
         static constexpr size_t vertices_buffer_index = 0;
         static constexpr size_t indices_buffer_index = 1;
-        static_memory<true,vertex, uint32_t>::array_values<8, 12> transfer_memory_;
+        static_memory<true,vertex, uint32_t>::vector_values transfer_memory_;
 
         pipeline_layout_object pipeline_layout_;
 

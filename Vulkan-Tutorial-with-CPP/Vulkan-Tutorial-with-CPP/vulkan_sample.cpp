@@ -1,9 +1,91 @@
 ﻿#include "vulkan_sample.h"
 #include "vulkan/utility/stb/image.h"
+#include "utility/constant/constant.h"
 
 namespace vulkan
 {
     const string vulkan_sample::window_title = "vulkan";
+
+    void vulkan_sample::generate_brdflut_image()
+    {
+        brdflut_image_ = {
+            ImageType::e2D,
+            {512, 512}
+        };
+        brdflut_sampler_ = decltype(brdflut_sampler_){
+            {
+                {},
+                Filter::eLinear,
+                Filter::eLinear,
+                SamplerMipmapMode::eLinear,
+                SamplerAddressMode::eClampToEdge,
+                SamplerAddressMode::eClampToEdge,
+                SamplerAddressMode::eClampToEdge,
+                0,
+                false,
+                1,
+                false,
+                CompareOp::eNever,
+                0,
+                1,
+                BorderColor::eFloatOpaqueWhite
+            }
+        };
+    }
+
+    void vulkan_sample::generate_cubemaps()
+    {
+        const auto generate_func = [](auto& texture_image,sampler_object& sampler ,const unsigned dim){
+            
+            const auto mipmaps =static_cast<uint32_t>(std::floor(std::log2(dim))) + 1;
+            texture_image = {
+                ImageType::e2D,
+                {dim, dim},
+                ImageCreateFlagBits::eCubeCompatible,
+                {},
+                pair{mipmaps,1}
+            };
+
+            sampler = sampler_object{
+                {
+                    {},
+                    Filter::eLinear,
+                    Filter::eLinear,
+                    SamplerMipmapMode::eLinear,
+                    SamplerAddressMode::eClampToEdge,
+                    SamplerAddressMode::eClampToEdge,
+                    SamplerAddressMode::eClampToEdge,
+                    0,
+                    false,
+                    1,
+                    false,
+                    CompareOp::eNever,
+                    0,
+                    mipmaps,
+                    BorderColor::eFloatOpaqueWhite
+                }
+            };
+        };
+
+        generate_func(irradiance_cube_image_,irradiance_cube_sampler_,64);
+        generate_func(pre_filtered_cube_image_,pre_filtered_cube_sampler_,512);
+    }
+
+    void vulkan_sample::initialize_cubemaps()
+    {
+        generate_cubemaps();
+        irradiance_cube_image_.initialize(device_,*physical_device_);
+        irradiance_cube_sampler_.initialize(device_);
+        pre_filtered_cube_image_.initialize(device_,*physical_device_);
+        pre_filtered_cube_sampler_.initialize(device_);
+    }
+
+    void vulkan_sample::initialize_brdflut_image()
+    {
+        generate_brdflut_image();
+        brdflut_image_.initialize(device_, *physical_device_);
+        brdflut_sampler_.initialize(device_);
+    }
 
     void vulkan_sample::initialize_window() noexcept
     {
@@ -820,6 +902,8 @@ namespace vulkan
 
         front_command_buffer.begin(command_buffer_begin_info_, device_.dispatch());
 
+        brdflut_image_.write_transfer_command(device_, front_command_buffer);
+
         transfer_memory_.write_transfer_command(front_command_buffer);
 
         texture_image_.write_transfer_command(device_, front_command_buffer);
@@ -1012,6 +1096,8 @@ namespace vulkan
         const VkDebugUtilsMessageTypeFlagsEXT type_flags,
         const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
         void*
+
+    
     )
     {
         const auto flag = DebugUtilsMessageSeverityFlagBitsEXT{flag_bits};

@@ -47,8 +47,8 @@ namespace vulkan::utility
             const optional<ComponentMapping>  = {},
             const optional<
                 pair<decltype(ImageCreateInfo::mipLevels), decltype(ImageCreateInfo::arrayLayers)>
-            >& = nullopt,
-            const optional<SampleCountFlagBits>  = SampleCountFlagBits::e1
+            >& = {},
+            const optional<SampleCountFlagBits>  = {}
         ) noexcept;
 
         void initialize(const device_object& device_object, const PhysicalDevice physical_device);

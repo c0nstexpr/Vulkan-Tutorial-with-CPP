@@ -96,7 +96,7 @@ namespace vulkan::utility
 
             uint32_t index_count;
             uint32_t vertex_count;
-            material material;
+            material material{};
 
             vector<vertex> vertices;
             vector<uint32_t> indices;
@@ -121,57 +121,71 @@ namespace vulkan::utility
             mesh(const tinygltf::Mesh&, const tinygltf::Model&, vector<material>);
         };
 
-        struct skin;
+
+        struct node;
+
+        struct skin
+        {
+            string name;
+            vector<mat4> inverse_bind_matrices;
+            const node* skeleton = nullptr;
+            vector<node*> joints;
+
+            skin() noexcept;
+
+            skin(
+                const tinygltf::Skin&,
+                const optional<
+                    tuple<const tinygltf::Accessor*, const tinygltf::BufferView*, const tinygltf::Buffer*>
+                >& = nullopt
+            )
+            noexcept;
+
+            void locate_skeleton(vector<node*>&);
+
+        private:
+            size_t skeleton_index_;
+
+        };
 
         struct node
         {
             int index = -1;
 
             string name;
-            int skin_index = -1;
+            skin skin;
             vec3 translation;
             vec3 rotation;
             vec3 scale = vec3{1};
             mat4 matrix = mat4{1};
 
-            struct uniform_block
-            {
-                mat4 matrix;
-                array<mat4, 128> joints;
-            };
-
             optional<mesh> mesh;
+
+            node* parent = nullptr;
+            vector<node> children;
 
             node() noexcept = default;
 
-            node(const int, const tinygltf::Node&, const tinygltf::Model&, vector<material>);
-        };
-
-        struct skin
-        {
-            string name;
-            optional<node> skeleton;
-            vector<const node*> joints;
-            vector<mat4> inverse_bind_matrices;
-
-            skin() noexcept;
-
-            skin(
-                const tinygltf::Skin&,
-                const vector<node>&,
-                const optional<tuple<const tinygltf::Accessor*, const tinygltf::BufferView*, const tinygltf::Buffer*>>&
-            
-            )
-            noexcept;
+            node(
+                const int,
+                node*,
+                vector<struct skin> skins,
+                const tinygltf::Node&,
+                const tinygltf::Model&,
+                vector<material>,
+                vector<node*>&
+            );
         };
 
 
     private:
         tinygltf::Model model_;
-        vector<material> materials_;
+        vector<node*> linear_nodes_;
 
     public:
         gltf_model(const path&);
+
+        mat4 get_dimension()const;
     };
 }
 

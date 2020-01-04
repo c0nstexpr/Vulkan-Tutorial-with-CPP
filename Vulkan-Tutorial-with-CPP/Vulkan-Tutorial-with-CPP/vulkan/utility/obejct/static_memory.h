@@ -146,7 +146,7 @@ namespace vulkan::utility
         public:
             using base = base_array_values<traits::template value_type>;
 
-            array_values() = default;
+            constexpr array_values() = default;
             array_values(const device_object&, const array<BufferUsageFlags, type_list::size>&);
             array_values(const PhysicalDevice&, const device_object&, const array<BufferUsageFlags, type_list::size>&);
         };

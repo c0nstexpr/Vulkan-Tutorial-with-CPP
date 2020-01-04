@@ -172,24 +172,24 @@ namespace vulkan::utility
                 const auto ptr = &gltf_model.buffers[buffer_view.buffer]
                     .data[accessor.byteOffset + buffer_view.byteOffset];
 
-                return pair{ptr, ptr + accessor.count * type_size} |
-                    boost::adaptors::strided(
-                        //abandon accessor.ByteStride() to avoid compilation error;
-                        [&accessor,&buffer_view]() -> size_t
-                        {
-                            const auto component_size_in_bytes =
-                                tinygltf::GetComponentSizeInBytes(accessor.componentType);
-                            const auto type_size_in_bytes = tinygltf::GetTypeSizeInBytes(accessor.type);
+                const auto component_size_in_bytes =
+                    tinygltf::GetComponentSizeInBytes(accessor.componentType);
+                if(component_size_in_bytes <= 0) throw std::runtime_error{"component type is not supported"};
 
-                            if(component_size_in_bytes <= 0) { return 0; }
+                size_t stride;
 
-                            return buffer_view.byteStride % component_size_in_bytes ?
-                                buffer_view.byteStride :
-                                type_size_in_bytes <= 0 ?
-                                0 :
-                                component_size_in_bytes * type_size_in_bytes;
-                        }()
-                    );
+                if(buffer_view.byteStride)
+                {
+                    const auto type_size_in_bytes = tinygltf::GetTypeSizeInBytes(accessor.type);
+                    if(type_size_in_bytes <= 0) throw std::runtime_error{"type is not supported"};
+                    stride = component_size_in_bytes * type_size_in_bytes;
+                }
+                else if(buffer_view.byteStride % component_size_in_bytes != 0)
+                    throw std::runtime_error{"stride is not aligned"};
+                else stride = buffer_view.byteStride;
+
+
+                return pair{ptr, ptr + accessor.count * type_size} | boost::adaptors::strided(stride);
             }
             return boost::strided_range<const pair<
                 decltype(gltf_model.buffers.front().data)::const_pointer,
@@ -336,7 +336,8 @@ namespace vulkan::utility
         const tinygltf::Primitive& gltf_primitive,
         struct material material,
         const tinygltf::Model& gltf_model
-    ):material(std::move(material))
+    ):
+        material(std::move(material))
     {
         initialize_vertices(gltf_primitive, gltf_model);
         initialize_indices(gltf_primitive, gltf_model);
@@ -344,7 +345,6 @@ namespace vulkan::utility
 
     pair<vec3, vec3> gltf_model::mesh::get_bounding() const
     {
-        min(vec3{},vec3{});
         return {
             std::min_element(
                 primitives.cbegin(),
@@ -375,20 +375,55 @@ namespace vulkan::utility
                 gltf_mesh.primitives,
                 [&model, &materials](decltype(gltf_mesh.primitives)::const_reference gltf_primitive)
                 {
-                    return primitive{gltf_primitive, std::move(materials[gltf_primitive.material]), model};
+                    return primitive{
+                        gltf_primitive,
+                        std::move(gltf_primitive.material > -1 ? materials[gltf_primitive.material] : material{}),
+                        model
+                    };
                 }
             )
         ) {}
 
+    gltf_model::skin::skin() noexcept = default;
+
+    gltf_model::skin::skin(
+        const tinygltf::Skin& skin,
+        const optional<tuple<
+            const tinygltf::Accessor*,
+            const tinygltf::BufferView*,
+            const tinygltf::Buffer*>>& matrices_tuple
+    ) noexcept :
+        name(skin.name),
+        skeleton_index_(skin.skeleton)
+    {
+        if(matrices_tuple)
+        {
+            const auto begin_ptr = reinterpret_cast<decltype(inverse_bind_matrices)::const_pointer>(
+                &std::get<2>(*matrices_tuple)->data[std::get<0>(*matrices_tuple)->byteOffset + std::get<1>(
+                    *matrices_tuple
+                )->byteOffset]
+            );
+            inverse_bind_matrices = decltype(inverse_bind_matrices){
+                begin_ptr,
+                begin_ptr + std::get<0>(*matrices_tuple)->count
+            };
+        }
+    }
+
+    void gltf_model::skin::locate_skeleton(vector<node*>& linear_nodes) { skeleton = linear_nodes[skeleton_index_]; }
+
     gltf_model::node::node(
         const int index,
+        node* parent,
+        vector<struct skin> skins,
         const tinygltf::Node& gltf_node,
         const tinygltf::Model& gltf_model,
-        vector<material> materials
+        vector<material> materials,
+        vector<node*>& linear_nodes
     ):
         index(index),
         name(gltf_node.name),
-        skin_index(gltf_node.skin),
+        skin(std::move(skins[gltf_node.skin])),
         translation(
             gltf_node.translation.size() == 3 ?
             make_vec3(reinterpret_cast<const decltype(translation)::value_type*>(gltf_node.translation.data())) :
@@ -409,42 +444,27 @@ namespace vulkan::utility
             make_mat4(reinterpret_cast<const decltype(matrix)::value_type*>(gltf_node.matrix.data())) :
             decltype(matrix){1}
         ),
-        mesh({gltf_model.meshes[gltf_node.mesh], gltf_model, std::move(materials)}) {}
-
-    gltf_model::skin::skin() noexcept = default;
-
-    gltf_model::skin::skin(
-        const tinygltf::Skin& skin,
-        const vector<node>& nodes,
-        const optional<tuple<
-            const tinygltf::Accessor*,
-            const tinygltf::BufferView*,
-            const tinygltf::Buffer*>>& matrices_tuple
-    ) noexcept :
-        name(skin.name),
-        skeleton(skin.skeleton != -1 ? optional{nodes[skin.skeleton]} : nullopt),
-        joints(skin.joints.size())
-    {
-        std::transform(
-            skin.joints.cbegin(),
-            skin.joints.cend(),
-            joints.begin(),
-            [&nodes](decltype(skin.joints)::const_reference joint) { return &nodes[joint]; }
-        );
-
-        if(matrices_tuple)
-        {
-            const auto begin_ptr = reinterpret_cast<decltype(inverse_bind_matrices)::const_pointer>(
-                &std::get<2>(*matrices_tuple)->data[std::get<0>(*matrices_tuple)->byteOffset + std::get<1>(
-                    *matrices_tuple
-                )->byteOffset]
-            );
-            inverse_bind_matrices = decltype(inverse_bind_matrices){
-                begin_ptr,
-                begin_ptr + std::get<0>(*matrices_tuple)->count
-            };
-        }
-    }
+        mesh({gltf_model.meshes[gltf_node.mesh], gltf_model, std::move(materials)}),
+        parent(parent),
+        children(
+            ::utility::container_transform<decltype(children)>(
+                gltf_node.children,
+                [this, &gltf_model, &materials, &skins, &linear_nodes](
+                const decltype(gltf_node.children)::value_type node_index
+            )
+                {
+                    return node{
+                        node_index,
+                        this,
+                        std::move(skins),
+                        gltf_model.nodes[node_index],
+                        gltf_model,
+                        materials,
+                        linear_nodes
+                    };
+                }
+            )
+        ) { linear_nodes.push_back(this); }
 
     gltf_model::gltf_model(const path& model_path)
     {
@@ -460,6 +480,8 @@ namespace vulkan::utility
                 throw std::runtime_error{
                     "failed to load gltf model :" + model_path.string() + "\n" + msg.first + "\n" + msg.second
                 };
+
+            linear_nodes_.reserve(model_.nodes.size());
         }
 
         const auto& textures = ::utility::container_transform<vector<texture>>(
@@ -475,14 +497,78 @@ namespace vulkan::utility
             }
         );
 
-        materials_ = ::utility::container_transform<decltype(materials_)>(
+        const auto materials = ::utility::container_transform<vector<material>>(
             model_.materials,
             [&textures](decltype(model_.materials)::const_reference gltf_material)
             {
                 return material{gltf_material, textures};
             }
         );
-        // Push a default material at the end of the list for meshes with no material assigned
-        materials_.resize(materials_.size() + 1);
+
+        const auto& default_scene = model_.scenes[model_.defaultScene > -1 ? model_.defaultScene : 0];
+
+        auto&& skins = ::utility::container_transform<vector<skin>>(
+            model_.skins,
+            [this](decltype(model_.skins)::const_reference gltf_skin)
+            {
+                if(gltf_skin.inverseBindMatrices > -1)
+                {
+                    const auto& accessor = model_.accessors[gltf_skin.inverseBindMatrices];
+                    const auto& buffer_view = model_.bufferViews[accessor.bufferView];
+                    const auto& buffer = model_.buffers[buffer_view.buffer];
+
+                    return skin{gltf_skin, {{&accessor, &buffer_view, &buffer}}};
+                }
+                return skin{gltf_skin};
+            }
+        );
+
+        const auto node_roots = ::utility::container_transform<vector<node>>(
+            default_scene.nodes,
+            [this, &materials, &skins](const decltype(default_scene.nodes)::value_type node_index)
+            {
+                return node{
+                    node_index,
+                    nullptr,
+                    std::move(skins),
+                    model_.nodes[node_index],
+                    model_,
+                    materials,
+                    linear_nodes_
+                };
+            }
+
+        );
+        std::sort(
+            linear_nodes_.begin(),
+            linear_nodes_.end(),
+            [](
+            decltype(linear_nodes_)::const_reference left,
+            decltype(linear_nodes_)::const_reference right
+        )
+            {
+                return left->index < right->index;
+            }
+        );
+
+        for(auto& skin : skins) skin.locate_skeleton(linear_nodes_);
+    }
+
+    mat4 gltf_model::get_dimension() const
+    {
+        vec3 min;
+        vec3 max{::utility::constant::numeric::numberic_max<float>};
+        for(const auto node : linear_nodes_)
+            if(node->mesh)
+            {
+                const auto& [mesh_min,mesh_max] = node->mesh->get_bounding();
+
+                min = glm::min(mesh_min,min);
+                max = glm::min(mesh_max,max);
+            }
+
+        auto&& dimension = scale(mat4{1}, max - min);
+        dimension[3] = vec4{min, 0};
+        return dimension;
     }
 }
