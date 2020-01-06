@@ -7,14 +7,19 @@ using namespace std::chrono;
 static glm_camera glm_camera{};
 
 vulkan_sample sample;
-        
 
-static float horizontal_degree{};
-static constexpr vec3 horizontal_axis{0,1,0};
-static float vertical_degree{};
-static constexpr vec3 vertical_axis{1,0,0};
+void perform_camera_update(GLFWwindow* window, const int key, const float speed_up_ratio)
+{
+    static float horizontal_degree{};
+    static float vertical_degree{};
+    static constexpr mat4 model{1};
+    static const auto& proj = []
+    {
+        auto&& p = glm_camera.get_proj_mat();
+        p[1][1] *= -1;
+        return p;
+    }();
 
-void perform_camera_update(GLFWwindow* window, const int key,const float speed_up_ratio) {
     switch(key)
     {
     case GLFW_KEY_W: { glm_camera.pos.z += speed_up_ratio; }
@@ -29,54 +34,45 @@ void perform_camera_update(GLFWwindow* window, const int key,const float speed_u
     break;
     case GLFW_KEY_E: { glm_camera.pos.y -= speed_up_ratio; }
     break;
-    case GLFW_KEY_KP_4: { horizontal_degree += speed_up_ratio; }
+    case GLFW_KEY_KP_4: { horizontal_degree -= speed_up_ratio; }
     break;
-    case GLFW_KEY_KP_6: { horizontal_degree -= speed_up_ratio; }
+    case GLFW_KEY_KP_6: { horizontal_degree += speed_up_ratio; }
     break;
     case GLFW_KEY_KP_8: { vertical_degree += speed_up_ratio; }
     break;
     case GLFW_KEY_KP_2: { vertical_degree -= speed_up_ratio; }
+    break;
+    case GLFW_KEY_HOME:
+    {
+        glm_camera.pos = {0, -1, -5};
+        vertical_degree = horizontal_degree = 0;
+    }
     break;
     case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(window, GL_TRUE);
         break;
     default: break;
     }
 
-    glm_camera.center =  glm_camera.pos+vec3{0,0,5};
+    glm_camera.quaternion = qua{vec3{vertical_degree, horizontal_degree, 0}};
 
-    static constexpr mat4 model{1};
-    static const auto& proj = []
-    {
-        auto&& p = glm_camera.get_proj_mat();
-        p[1][1] *= -1;
-        return p;
-    }();
     sample.flush_transform_to_memory();
 
-    const auto& view = rotate(
-        rotate(glm_camera.get_view_mat(), horizontal_degree, horizontal_axis),
-        vertical_degree,
-        vertical_axis
-    );
-
-    sample.set_transform({proj * view * model});
+    sample.set_transform({proj * glm_camera.get_view_mat() * model});
 }
 
-void key_callback(GLFWwindow* window, const int key, int, const int action, int)
+void key_callback(GLFWwindow* window, const int key, const int, const int action, const int)
 {
     static auto speed_up_ratio = 1.0f;
     switch(action)
     {
-    case GLFW_REPEAT: speed_up_ratio += 0.05f;
-    case GLFW_PRESS: perform_camera_update(window, key,speed_up_ratio);
+    case GLFW_REPEAT: speed_up_ratio += 0.01f;
+    case GLFW_PRESS: perform_camera_update(window, key, speed_up_ratio);
         break;
-    case GLFW_RELEASE: speed_up_ratio = 0.05f;
+    case GLFW_RELEASE: speed_up_ratio = 0.01f;
         break;
     default: break;
     }
 }
-
-
 
 int main()
 {
@@ -89,10 +85,9 @@ int main()
             glm_camera.aspect_ratio = extent.width / static_cast<decltype(glm_camera.aspect_ratio)>(extent.height);
         }
 
-        glm_camera.pos = {0,0,-5};
-        glm_camera.up = {0,1,0};
+        glfwSetKeyCallback(sample.get_window(), key_callback);
 
-        glfwSetKeyCallback(sample.get_window(),key_callback);
+        key_callback(sample.get_window(),GLFW_KEY_HOME, 0,GLFW_PRESS, 0);
 
         while(sample.render());
     } catch(const std::exception& e) { std::cerr << e.what(); }
