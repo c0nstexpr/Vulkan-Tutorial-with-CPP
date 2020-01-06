@@ -1,5 +1,4 @@
 ﻿#include "vulkan_sample.h"
-#include <unordered_map>
 
 namespace vulkan
 {
@@ -176,7 +175,7 @@ namespace vulkan
     void vulkan_sample::generate_model()
     {
         string err, warn;
-        const auto& model_path = path{"resource"} / "room" / "Enter a title.obj";
+        const auto& model_path = path{"resource"} / "room" / "room.obj";
 
         if(!LoadObj(
             &model_.attribute,
@@ -184,7 +183,8 @@ namespace vulkan
             &model_.materials,
             &err,
             &warn,
-            model_path.u8string().c_str()
+            model_path.generic_u8string().c_str(),
+            model_path.parent_path().generic_u8string().c_str()
         ))
             throw std::runtime_error{err + warn};
         std::cout << warn;
@@ -274,6 +274,7 @@ namespace vulkan
             directory / "rest.jpg",
             directory / "table.jpg",
             directory / "veshalka.jpg",
+            directory / "wall1.jpg",
             directory / "wall_staff.jpg",
             directory / "win_left.jpg",
             directory / "win_right.jpg"
@@ -282,7 +283,7 @@ namespace vulkan
         map<string, stb::image<channel::rgb_alpha>> image_sources;
 
         for(const auto& path : paths)
-            image_sources[path.generic_u8string()] = stb::image<channel::rgb_alpha>{path};
+            image_sources[path.stem().generic_u8string()] = stb::image<channel::rgb_alpha>{path};
 
         return image_sources;
     }
@@ -291,7 +292,7 @@ namespace vulkan
     {
         struct vertex_hasher
         {
-            size_t operator()(const vertex& v)const
+            size_t operator()(const vertex& v) const
             {
                 const auto hash_pos = std::hash<decltype(v.pos)>{}(v.pos);
                 const auto hash_color = std::hash<decltype(v.color)>{}(v.color);
@@ -303,11 +304,24 @@ namespace vulkan
 
         vector<uint32_t> indices;
 
-        unordered_map<vertex,uint32_t,vertex_hasher> vertices_map;
+        unordered_map<vertex, uint32_t, vertex_hasher> vertices_map;
         vector<vertex> vertices;
 
+        meshes_.reserve(model_.shapes.size());
         for(const auto& shape : model_.shapes)
-            for(const auto& index : shape.mesh.indices)
+        {
+            const auto& mesh = shape.mesh;
+            meshes_.push_back(
+                {
+                    static_cast<uint32_t>(indices.size()),
+                    static_cast<uint32_t>(mesh.indices.size()),
+                    mesh.material_ids.size() ?
+                    &texture_image_map_[path{model_.materials[mesh.material_ids.front()].diffuse_texname}.stem().
+                        generic_u8string()] :
+                    nullptr
+                }
+            );
+            for(const auto& index : mesh.indices)
             {
                 vertex vertex = {
                     {
@@ -324,19 +338,22 @@ namespace vulkan
                 auto&& it = vertices_map.find(vertex);
                 if(it == vertices_map.cend())
                 {
-                    it = vertices_map.insert({vertex, static_cast<decltype(vertices_map)::mapped_type>(vertices_map.size())}).first;
+                    it = vertices_map.insert(
+                        {vertex, static_cast<decltype(vertices_map)::mapped_type>(vertices_map.size())}
+                    ).first;
                     vertices.push_back(vertex);
                 }
                 indices.push_back(it->second);
             }
+        }
         transfer_memory_ = decltype(transfer_memory_){
             *physical_device_,
             device_,
             array<BufferUsageFlags, 2>{BufferUsageFlagBits::eVertexBuffer, BufferUsageFlagBits::eIndexBuffer},
-            {vertices.size(),indices.size()}
+            {vertices.size(), indices.size()}
         };
 
-        return {vertices,indices};
+        return {vertices, indices};
     }
 
     void vulkan_sample::generate_texture_sampler_create_info()
@@ -348,7 +365,7 @@ namespace vulkan
         info.magFilter = info.minFilter = Filter::eLinear;
         info.mipmapMode = SamplerMipmapMode::eLinear;
         info.anisotropyEnable = true;
-        info.maxAnisotropy = decltype(texture_images_)::mapped_type::max_anisotropy;
+        info.maxAnisotropy = decltype(texture_image_map_)::mapped_type::max_anisotropy;
         info.compareOp = CompareOp::eAlways;
         info.borderColor = BorderColor::eIntOpaqueBlack;
 
@@ -392,13 +409,13 @@ namespace vulkan
 
         for(auto& source : image_sources)
         {
-            auto&& texture_image = decltype(texture_images_)::mapped_type{
+            auto&& texture_image = decltype(texture_image_map_)::mapped_type{
                 ImageType::e2D,
                 {static_cast<uint32_t>(source.second.width()), static_cast<uint32_t>(source.second.height()), 1}
             };
             texture_image.initialize(device_, *physical_device_);
             texture_image.write_from_src(device_, source.second.cbegin(), source.second.cend());
-            texture_images_[source.first] = std::move(texture_image);
+            texture_image_map_[source.first] = std::move(texture_image);
         }
     }
 
@@ -658,7 +675,7 @@ namespace vulkan
         };
     }
 
-    void vulkan_sample::generate_descriptor_pool_create_info(const vector<image_view_object>& image_view_objects)
+    void vulkan_sample::generate_descriptor_pool_create_info(const vector<mesh>& meshes)
     {
         using descriptor_pool_type = decltype(descriptor_pool_);
         using descriptor_pool_info_type = descriptor_pool_type::info_type;
@@ -666,10 +683,10 @@ namespace vulkan
             descriptor_pool_info_type{
                 {
                     DescriptorPoolSize
-                    {DescriptorType::eUniformBuffer, static_cast<uint32_t>(image_view_objects.size())},
+                    {DescriptorType::eUniformBuffer, static_cast<uint32_t>(meshes.size())},
                     DescriptorPoolSize{
                         DescriptorType::eCombinedImageSampler,
-                        static_cast<uint32_t>(image_view_objects.size())
+                        static_cast<uint32_t>(meshes.size())
                     }
                 },
                 descriptor_pool_info_type::base_info_type{DescriptorPoolCreateFlagBits::eFreeDescriptorSet}
@@ -706,7 +723,7 @@ namespace vulkan
 
     void vulkan_sample::initialize_descriptor_pool()
     {
-        generate_descriptor_pool_create_info(image_views_);
+        generate_descriptor_pool_create_info(meshes_);
         descriptor_pool_.initialize(device_);
     }
 
@@ -846,7 +863,7 @@ namespace vulkan
     }
 
     void vulkan_sample::generate_descriptor_set_allocate_info(
-        const vector<image_view_object>& image_view_objects,
+        const vector<mesh>& meshes,
         const descriptor_set_layout_object& descriptor_set_layout_object,
         const descriptor_pool_object& descriptor_pool_object
     )
@@ -854,11 +871,11 @@ namespace vulkan
         using descriptor_set_type = decltype(descriptor_sets_)::value_type;
         using descriptor_set_info_type = descriptor_set_type::info_type;
 
-        descriptor_sets_.resize(image_view_objects.size());
+        descriptor_sets_.resize(meshes.size());
         for(auto& descriptor_set : descriptor_sets_)
             descriptor_set = descriptor_set_type{
                 descriptor_set_info_type{
-                    {image_view_objects.size(), *descriptor_set_layout_object},
+                    {meshes.size(), *descriptor_set_layout_object},
                     descriptor_set_info_type::base_info_type{*descriptor_pool_object}
                 }
             };
@@ -884,8 +901,17 @@ namespace vulkan
 
     void vulkan_sample::initialize_descriptor_sets()
     {
-        generate_descriptor_set_allocate_info(image_views_, descriptor_set_layout_, descriptor_pool_);
+        generate_descriptor_set_allocate_info(meshes_, descriptor_set_layout_, descriptor_pool_);
         descriptor_sets_ = descriptor_pool_.create_element_objects(device_, descriptor_sets_.front().info().info);
+        ::utility::for_each(
+            [](decltype(meshes_)::reference mesh,decltype(descriptor_sets_)::const_reference descriptor_set)
+            {
+                mesh.descriptor_set = &descriptor_set;
+            },
+            meshes_.begin(),
+            meshes_.end(),
+            descriptor_sets_.cbegin()
+        );
     }
 
     void vulkan_sample::submit_precondition_command()
@@ -902,7 +928,7 @@ namespace vulkan
 
         transfer_memory_.write_transfer_command(front_command_buffer);
 
-        for(auto& pair : texture_images_)
+        for(auto& pair : texture_image_map_)
         {
             const auto& texture_image = pair.second;
             texture_image.write_transfer_command(device_, front_command_buffer);
@@ -934,88 +960,111 @@ namespace vulkan
         present_infos_.resize(submit_infos_.size());
         submit_precondition_command();
 
-        for(const auto& descriptor_set : descriptor_sets_)
+        command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
+
+        graphics_queue_.waitIdle(device_.dispatch());
+
+        for(const auto& mesh : meshes_)
+        {
             device_->updateDescriptorSets(
                 {
                     info_proxy<WriteDescriptorSet>{
                         {},
                         {{*transform_buffer_, 0, whole_size<decltype(DescriptorBufferInfo::range)>}},
                         {},
-                        {*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
+                        {**mesh.descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
                     },
                     info_proxy<WriteDescriptorSet>{
-                        {{*texture_sampler_, *texture_images_.cbegin()->second.image_view(), ImageLayout::eShaderReadOnlyOptimal}},
+                        {{*texture_sampler_, *mesh.texture->image_view(), ImageLayout::eShaderReadOnlyOptimal}},
                         {},
                         {},
-                        {*descriptor_set, 1, 0, 1, DescriptorType::eCombinedImageSampler}
+                        {**mesh.descriptor_set, 1, 0, 1, DescriptorType::eCombinedImageSampler}
                     }
                 },
                 {},
                 device_.dispatch()
             );
+        }
 
-        command_buffer_begin_info_ = CommandBufferBeginInfo{CommandBufferUsageFlagBits::eSimultaneousUse};
 
-        graphics_queue_.waitIdle(device_.dispatch());
-
-        std::for_each(
-            graphics_command_buffers_.begin(),
-            graphics_command_buffers_.end(),
-            [this, index = size_t{0}](command_buffer_object& buffer)mutable
+        ::utility::for_each(
+            [this, index = uint32_t{0}](
+            decltype(graphics_command_buffers_)::const_reference& buffer,
+            decltype(render_pass_begin_infos_)::reference& render_pass_begin_info,
+            decltype(frame_buffers_)::const_reference& framebuffer,
+            decltype(submit_infos_)::reference& submit_info,
+            decltype(render_syn_)::const_reference& render_syn,
+            decltype(present_infos_)::reference& present_info
+        ) mutable
             {
-                render_pass_begin_infos_[index] = info_proxy<RenderPassBeginInfo>{
+                render_pass_begin_info = std::decay_t<decltype( render_pass_begin_info)>{
                     {ClearColorValue{}, ClearDepthStencilValue{1, 1}},
-                    RenderPassBeginInfo{
+                    {
                         RenderPass{*render_pass_},
-                        Framebuffer{*frame_buffers_[index]},
+                        Framebuffer{*framebuffer},
                         Rect2D{{0, 0}, {swapchain_.info().info.imageExtent}}
                     }
                 };
 
                 buffer->begin(command_buffer_begin_info_, device_.dispatch());
-                buffer->beginRenderPass(render_pass_begin_infos_[index], SubpassContents::eInline, device_.dispatch());
+                buffer->beginRenderPass(render_pass_begin_info, SubpassContents::eInline, device_.dispatch());
 
                 buffer->bindPipeline(PipelineBindPoint::eGraphics, *graphics_pipeline_, device_.dispatch());
+
                 buffer->bindVertexBuffers(
                     0,
                     {*transfer_memory_.device_local_buffer(vertices_buffer_index)},
                     {0},
                     device_.dispatch()
                 );
+
                 buffer->bindIndexBuffer(
                     {*transfer_memory_.device_local_buffer(indices_buffer_index)},
                     {0},
                     index_type<std::decay_t<decltype(get_indices())>::value_type>,
                     device_.dispatch()
                 );
-                buffer->bindDescriptorSets(
-                    PipelineBindPoint::eGraphics,
-                    *pipeline_layout_,
-                    0,
-                    *descriptor_sets_[index],
-                    {},
-                    device_.dispatch()
-                );
 
-                buffer->drawIndexed(static_cast<uint32_t>(get_indices().size()), 1, 0, 0, 0, device_.dispatch());
+
+                for(const auto& mesh : meshes_)
+                {
+                    buffer->bindDescriptorSets(
+                        PipelineBindPoint::eGraphics,
+                        *pipeline_layout_,
+                        0,
+                        **mesh.descriptor_set,
+                        {},
+                        device_.dispatch()
+                    );
+
+                    buffer->drawIndexed(mesh.index_count, 1, mesh.first_index, 0, 0, device_.dispatch());
+                }
+
 
                 buffer->endRenderPass(device_.dispatch());
                 buffer->end(device_.dispatch());
 
-                submit_infos_[index] = info_proxy<SubmitInfo>{
-                    vector<Semaphore>{},
+                submit_info = std::decay_t<decltype(submit_info)>{
+                    {},
                     PipelineStageFlagBits::eColorAttachmentOutput,
-                    vector<CommandBuffer>{*buffer},
-                    vector<Semaphore>{*render_syn_[index]}
+                    {*buffer},
+                    {*render_syn}
                 };
 
-                present_infos_[index] = info_proxy<PresentInfoKHR>{
-                    submit_infos_[index].signal_semaphores_property,
-                    vector<SwapchainKHR>{*swapchain_},
-                    vector<uint32_t>{static_cast<uint32_t>(index)}
+                present_info = std::decay_t<decltype(present_info)>{
+                    submit_info.signal_semaphores_property,
+                    {*swapchain_},
+                    {static_cast<uint32_t>(index)}
                 };
                 index++;
-            }
+            },
+            graphics_command_buffers_.cbegin(),
+            graphics_command_buffers_.cend(),
+            render_pass_begin_infos_.begin(),
+            frame_buffers_.cbegin(),
+            submit_infos_.begin(),
+            render_syn_.cbegin(),
+            present_infos_.begin()
         );
     }
 

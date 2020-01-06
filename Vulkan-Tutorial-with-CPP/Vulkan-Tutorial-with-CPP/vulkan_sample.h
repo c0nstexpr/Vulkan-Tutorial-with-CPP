@@ -22,6 +22,14 @@ namespace vulkan
 
     class vulkan_sample
     {
+        struct mesh
+        {
+            uint32_t first_index;
+            uint32_t index_count;
+            const texture_image<Format::eR8G8B8A8Unorm>* texture = nullptr;
+            const  descriptor_set_object* descriptor_set = nullptr;
+        };
+
         void initialize_window() noexcept;
 
         void generate_debug_messenger_create_info();
@@ -77,7 +85,7 @@ namespace vulkan
             const command_pool_object&
         );
         void generate_render_pass_create_info(const swapchain_object&, const depth_image&);
-        void generate_descriptor_pool_create_info(const vector<image_view_object>&);
+        void generate_descriptor_pool_create_info(const vector<mesh>& meshes);
         void generate_sync_objects_create_info(const vector<image_view_object>&);
 
         void initialize_graphics_command_buffer();
@@ -99,7 +107,7 @@ namespace vulkan
             const pipeline_layout_object&
         );
         void generate_descriptor_set_allocate_info(
-            const vector<image_view_object>&,
+            const vector<mesh>&,
             const descriptor_set_layout_object&,
             const descriptor_pool_object&
         );
@@ -144,6 +152,8 @@ namespace vulkan
             std::vector<tinyobj::material_t> materials;
         }model_;
 
+        vector<mesh> meshes_;
+
         Queue graphics_queue_;
         Queue present_queue_;
 
@@ -177,7 +187,7 @@ namespace vulkan
 
         vector<command_buffer_object> graphics_command_buffers_;
 
-        map<string,texture_image<Format::eR8G8B8A8Unorm>> texture_images_;
+        map<string,texture_image<Format::eR8G8B8A8Unorm>> texture_image_map_;
 
         sampler_object texture_sampler_;
 

@@ -23,7 +23,7 @@ namespace utility
 	}
 
 	template<typename T, typename Input, typename UnaryOp>
-	T range_transform(const Input begin, const Input end, const UnaryOp& op)
+	T range_transform(const Input begin, const Input end, UnaryOp&& op)
 	{
 		using input_type = decltype(*begin);
 		using output_type = typename T::value_type;
@@ -44,7 +44,7 @@ namespace utility
 	}
 
 	template<typename T, typename U, typename UnaryOp>
-	T container_transform(U&& u, const UnaryOp& op)
+	T container_transform(U&& u, UnaryOp&& op)
 	{
 		return range_transform<T>(u.begin(), u.end(), op);
 	}
@@ -65,14 +65,14 @@ namespace utility
 	}
 
 	template<typename UnaryOp, typename InputFirst, typename... InputRest>
-	constexpr void for_each(const UnaryOp& op, InputFirst begin, const InputFirst end, InputRest... rest)
+	constexpr void for_each(UnaryOp&& op, InputFirst begin, const InputFirst end, InputRest... rest)
 	{
 		while(begin != end)
 			op(*begin++, *rest++...);
 	}
 
 	template<typename UnaryOp, typename InputFirst, typename... InputRest>
-	constexpr void for_each(const UnaryOp& op, InputFirst& first_range, InputRest&... rest_range)
+	constexpr void for_each(UnaryOp&& op, InputFirst& first_range, InputRest&... rest_range)
 	{
 		for_each(op, first_range.begin(), first_range.end(), rest_range.begin()...);
 	}
