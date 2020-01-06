@@ -10,8 +10,9 @@ vulkan_sample sample;
 
 void perform_camera_update(GLFWwindow* window, const int key, const float speed_up_ratio)
 {
-    static float horizontal_degree{};
-    static float vertical_degree{};
+    static float y_degree{};
+    static float x_degree{};
+    static float z_degree{};
     static constexpr mat4 model{1};
     static const auto& proj = []
     {
@@ -30,22 +31,26 @@ void perform_camera_update(GLFWwindow* window, const int key, const float speed_
     break;
     case GLFW_KEY_D: { glm_camera.pos.x -= speed_up_ratio; }
     break;
-    case GLFW_KEY_Q: { glm_camera.pos.y += speed_up_ratio; }
+    case GLFW_KEY_Q: { glm_camera.pos.y -= speed_up_ratio; }
     break;
-    case GLFW_KEY_E: { glm_camera.pos.y -= speed_up_ratio; }
+    case GLFW_KEY_E: { glm_camera.pos.y += speed_up_ratio; }
     break;
-    case GLFW_KEY_KP_4: { horizontal_degree -= speed_up_ratio; }
+    case GLFW_KEY_KP_4: { y_degree -= speed_up_ratio; }
     break;
-    case GLFW_KEY_KP_6: { horizontal_degree += speed_up_ratio; }
+    case GLFW_KEY_KP_6: { y_degree += speed_up_ratio; }
     break;
-    case GLFW_KEY_KP_8: { vertical_degree += speed_up_ratio; }
+    case GLFW_KEY_KP_8: { x_degree += speed_up_ratio; }
     break;
-    case GLFW_KEY_KP_2: { vertical_degree -= speed_up_ratio; }
+    case GLFW_KEY_KP_2: { x_degree -= speed_up_ratio; }
+    break;
+    case GLFW_KEY_KP_ADD: { z_degree += speed_up_ratio; }
+    break;
+    case GLFW_KEY_KP_SUBTRACT: { z_degree -= speed_up_ratio; }
     break;
     case GLFW_KEY_HOME:
     {
         glm_camera.pos = {0, -1, -5};
-        vertical_degree = horizontal_degree = 0;
+        z_degree = x_degree = y_degree = 0;
     }
     break;
     case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(window, GL_TRUE);
@@ -53,7 +58,7 @@ void perform_camera_update(GLFWwindow* window, const int key, const float speed_
     default: break;
     }
 
-    glm_camera.quaternion = qua{vec3{vertical_degree, horizontal_degree, 0}};
+    glm_camera.quaternion = qua{vec3{x_degree, y_degree, z_degree}};
 
     sample.flush_transform_to_memory();
 
