@@ -102,6 +102,9 @@
     <ClCompile Include="vulkan\utility\gltf\gltf.cpp">
       <Filter>源文件\vulkan\utility\gltf</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan\utility\utility.cpp">
+      <Filter>源文件\vulkan\utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vulkan\utility\obejct\object.tpp">
@@ -195,6 +198,9 @@
     </ClInclude>
     <ClInclude Include="vulkan\utility\gltf\gltf.h">
       <Filter>头文件\vulkan\utility\gltf</Filter>
+    </ClInclude>
+    <ClInclude Include="glm_camera.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

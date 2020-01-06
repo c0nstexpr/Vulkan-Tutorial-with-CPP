@@ -2,6 +2,9 @@
 
 #include "vulkan/utility/utility.h"
 #include "utility/constant/numberic.h"
+#include "vulkan/utility/gltf/gltf.h"
+#include <unordered_map>
+#include <glm/gtx/hash.hpp>
 
 namespace vulkan
 {
@@ -15,6 +18,7 @@ namespace vulkan
 
     using ::time;
     using stb::channel;
+    using std::unordered_map;
 
     class vulkan_sample
     {
@@ -36,18 +40,14 @@ namespace vulkan
         void generate_device_create_info();
         void initialize_device();
 
-        void generate_brdflut_image();
-        void generate_cubemaps();
-
-        void initialize_cubemaps();
-        void initialize_brdflut_image();
-
         void initialize_queue();
+
+        void generate_model();
 
         void generate_shader_module_create_infos();
         void generate_descriptor_set_layout_create_info();
-        void generate_texture_image_create_info();
-        void generate_buffer_allocate_info();
+        [[nodiscard]] map<string, stb::image<channel::rgb_alpha>> generate_texture_image_create_info();
+        [[nodiscard]] pair<vector<vertex>, vector<uint32_t>> generate_buffer_allocate_info();
         void generate_texture_sampler_create_info();
         void generate_transform_buffer_create_info();
         void generate_graphics_command_pool_create_info();
@@ -137,17 +137,15 @@ namespace vulkan
 
         device_object device_;
 
+        struct
+        {
+            tinyobj::attrib_t attribute;
+            std::vector<tinyobj::shape_t> shapes;
+            std::vector<tinyobj::material_t> materials;
+        }model_;
+
         Queue graphics_queue_;
         Queue present_queue_;
-
-        texture_image<Format::eR16G16Sfloat> brdflut_image_;
-        sampler_object brdflut_sampler_;
-
-        texture_image<Format::eR32G32B32A32Sfloat> irradiance_cube_image_;
-        sampler_object irradiance_cube_sampler_;
-
-        texture_image<Format::eR32G32B32A32Sfloat> pre_filtered_cube_image_;
-        sampler_object pre_filtered_cube_sampler_;
 
         swapchain_object swapchain_;
 
@@ -163,12 +161,13 @@ namespace vulkan
         descriptor_set_layout_object descriptor_set_layout_;
         descriptor_pool_object descriptor_pool_;
         vector<descriptor_set_object> descriptor_sets_;
+
         buffer_object transform_buffer_;
         device_memory_object transform_buffer_memory_;
 
         static constexpr size_t vertices_buffer_index = 0;
         static constexpr size_t indices_buffer_index = 1;
-        static_memory<true,vertex, uint32_t>::vector_values transfer_memory_;
+        static_memory<true,vertex, uint32_t>::vector_values transfer_memory_{};
 
         pipeline_layout_object pipeline_layout_;
 
@@ -178,8 +177,7 @@ namespace vulkan
 
         vector<command_buffer_object> graphics_command_buffers_;
 
-        stb::image<channel::rgb_alpha> texture_image_src_{};
-        texture_image<Format::eR8G8B8A8Unorm> texture_image_;
+        map<string,texture_image<Format::eR8G8B8A8Unorm>> texture_images_;
 
         sampler_object texture_sampler_;
 
@@ -220,15 +218,15 @@ namespace vulkan
         void flush_to_memory();
 
         void set_transform(decltype(transform_mat_));
-        constexpr const decltype(transform_mat_)& get_transform() const;
+        [[nodiscard]] constexpr const decltype(transform_mat_)& get_transform() const;
 
         void set_vertices(decltype(transfer_memory_)::value_type<vertex>);
-        constexpr const decltype(transfer_memory_)::value_type<vertex>& get_vertices() const;
+        [[nodiscard]] constexpr const decltype(transfer_memory_)::value_type<vertex>& get_vertices() const;
 
         void set_indices(decltype(transfer_memory_)::value_type<uint32_t>);
-        constexpr const decltype(transfer_memory_)::value_type<uint32_t>& get_indices() const;
+        [[nodiscard]] constexpr const decltype(transfer_memory_)::value_type<uint32_t>& get_indices() const;
 
-        void set_image(decltype(texture_image_src_));
+        [[nodiscard]] constexpr const decltype(window_)& get_window() const;
 
         static constexpr uint32_t width = 1280;
         static constexpr uint32_t height = 960;

@@ -1,4 +1,5 @@
 #pragma once
+#include <type_traits>
 
 namespace vulkan::utility
 {
@@ -104,11 +105,19 @@ namespace vulkan::utility
     }
 
     template<Format FormatValue>
+    template<typename Input>
     void texture_image<FormatValue>::write_from_src(
         const device_object& device_object,
-        const constant::format_t<format_value>& begin,
-        const constant::format_t<format_value>& end
-    ) const { write(buffer_memory_, device_object, &begin, &end); }
+        const Input& begin,
+        const Input& end
+    ) const
+    {
+        using input_data_type = std::decay_t<decltype(*begin)>;
+
+        static_assert(std::is_same_v<input_data_type, constant::format_t<format_value>>,
+            "Input image data not compatible");
+        write(buffer_memory_, device_object, begin, end);
+    }
 
     template<Format FormatValue>
     void texture_image<FormatValue>::write_transfer_command(

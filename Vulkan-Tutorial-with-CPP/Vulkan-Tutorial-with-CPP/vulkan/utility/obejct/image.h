@@ -35,9 +35,9 @@ namespace vulkan::utility
 
         image_view_object image_view_;
 
+    public:
         static constexpr auto max_anisotropy = 16;
 
-    public:
         constexpr texture_image() noexcept = default;
 
         constexpr texture_image(
@@ -53,10 +53,11 @@ namespace vulkan::utility
 
         void initialize(const device_object& device_object, const PhysicalDevice physical_device);
 
+        template<typename Input>
         void write_from_src(
             const device_object&,
-            const constant::format_t<format_value>&,
-            const constant::format_t<format_value>&
+            const Input&,
+            const Input&
         ) const;
 
         void write_transfer_command(const device_object& device_object, const CommandBuffer&) const;
@@ -82,9 +83,9 @@ namespace vulkan::utility
 
         image_view_object image_view_;
 
+    public:
         static constexpr auto max_anisotropy = 16;
 
-    public:
         constexpr depth_image() noexcept = default;
 
         constexpr depth_image(

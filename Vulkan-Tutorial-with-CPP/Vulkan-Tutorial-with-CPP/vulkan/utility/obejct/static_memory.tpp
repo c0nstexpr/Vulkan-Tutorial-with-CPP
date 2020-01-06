@@ -16,8 +16,7 @@ namespace vulkan::utility
         const size_t data_size = sizeof(data_element_type) * std::distance(data_begin, data_end);
 
         if(offset + data_size > static_cast<MemoryAllocateInfo>(memory_object.info()).allocationSize)
-            throw std::
-            runtime_error("data size is out of destination memory range");
+            throw std::runtime_error("data size is out of destination memory range");
 
         std::copy(
             data_begin,
@@ -140,7 +139,7 @@ namespace vulkan::utility
         [[maybe_unused]] const Op& op
     )
     {
-        if(value.size() != type_sizes[type_index<T>]) throw std::out_of_range{"input value out of range"};
+        if(value.size() > sizes_[type_index<T>]) throw std::out_of_range{"Input value out of range"};
         if(host_memory_)
             if constexpr(std::is_same_v<Op, empty_type>)
                 utility::write(
@@ -173,8 +172,8 @@ namespace vulkan::utility
         const PhysicalDevice& physical_device,
         const device_object& device,
         const array<BufferUsageFlags, type_list::size>& usages,
-        const decltype(sizes_)& size
-    ) : base_array_values(device, usages, size) { initialize(physical_device); }
+        const decltype(sizes_)& sizes
+    ) : base_array_values(device, usages, sizes) { initialize(physical_device); }
 
     template<bool Cached, typename ... Types>
     template<template <typename T> class RangeType>

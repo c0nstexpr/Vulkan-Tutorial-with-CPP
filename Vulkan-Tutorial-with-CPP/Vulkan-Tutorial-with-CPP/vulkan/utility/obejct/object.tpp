@@ -118,4 +118,9 @@ namespace vulkan::utility
     constexpr vertex::vertex(const vec3 pos, const vec3 color, const vec2 texture) noexcept :
         base{pos, color, texture}
     {}
+
+    constexpr bool vertex::operator==(const vertex& right) const
+    {
+        return pos == right.pos && color == right.color && texture_coordinate == right.texture_coordinate;
+    }
 }

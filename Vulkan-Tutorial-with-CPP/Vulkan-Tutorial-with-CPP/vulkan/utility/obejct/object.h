@@ -212,6 +212,8 @@ namespace vulkan::utility
             static_cast<uint32_t>(MEMBER_OFFSET(base, texture_coordinate))
         }
         };
+
+        constexpr bool operator==(const vertex& right) const;
     };
 }
 

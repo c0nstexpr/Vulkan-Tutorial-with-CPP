@@ -116,6 +116,12 @@ namespace vulkan::utility
 
             pair<vec3, vec3> get_bounding() const;
 
+            struct uniform_block
+            {
+                mat4 matrix;
+                array<mat4,128> joint_matrix;
+            };
+
             mesh() noexcept = default;
 
             mesh(const tinygltf::Mesh&, const tinygltf::Model&, vector<material>);

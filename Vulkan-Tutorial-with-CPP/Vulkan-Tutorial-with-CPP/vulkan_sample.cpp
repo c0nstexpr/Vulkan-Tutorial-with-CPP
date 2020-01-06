@@ -1,91 +1,9 @@
 ﻿#include "vulkan_sample.h"
-#include "vulkan/utility/stb/image.h"
-#include "utility/constant/constant.h"
+#include <unordered_map>
 
 namespace vulkan
 {
     const string vulkan_sample::window_title = "vulkan";
-
-    void vulkan_sample::generate_brdflut_image()
-    {
-        brdflut_image_ = {
-            ImageType::e2D,
-            {512, 512}
-        };
-        brdflut_sampler_ = decltype(brdflut_sampler_){
-            {
-                {},
-                Filter::eLinear,
-                Filter::eLinear,
-                SamplerMipmapMode::eLinear,
-                SamplerAddressMode::eClampToEdge,
-                SamplerAddressMode::eClampToEdge,
-                SamplerAddressMode::eClampToEdge,
-                0,
-                false,
-                1,
-                false,
-                CompareOp::eNever,
-                0,
-                1,
-                BorderColor::eFloatOpaqueWhite
-            }
-        };
-    }
-
-    void vulkan_sample::generate_cubemaps()
-    {
-        const auto generate_func = [](auto& texture_image,sampler_object& sampler ,const unsigned dim){
-            
-            const auto mipmaps =static_cast<uint32_t>(std::floor(std::log2(dim))) + 1;
-            texture_image = {
-                ImageType::e2D,
-                {dim, dim},
-                ImageCreateFlagBits::eCubeCompatible,
-                {},
-                pair{mipmaps,1}
-            };
-
-            sampler = sampler_object{
-                {
-                    {},
-                    Filter::eLinear,
-                    Filter::eLinear,
-                    SamplerMipmapMode::eLinear,
-                    SamplerAddressMode::eClampToEdge,
-                    SamplerAddressMode::eClampToEdge,
-                    SamplerAddressMode::eClampToEdge,
-                    0,
-                    false,
-                    1,
-                    false,
-                    CompareOp::eNever,
-                    0,
-                    mipmaps,
-                    BorderColor::eFloatOpaqueWhite
-                }
-            };
-        };
-
-        generate_func(irradiance_cube_image_,irradiance_cube_sampler_,64);
-        generate_func(pre_filtered_cube_image_,pre_filtered_cube_sampler_,512);
-    }
-
-    void vulkan_sample::initialize_cubemaps()
-    {
-        generate_cubemaps();
-        irradiance_cube_image_.initialize(device_,*physical_device_);
-        irradiance_cube_sampler_.initialize(device_);
-        pre_filtered_cube_image_.initialize(device_,*physical_device_);
-        pre_filtered_cube_sampler_.initialize(device_);
-    }
-
-    void vulkan_sample::initialize_brdflut_image()
-    {
-        generate_brdflut_image();
-        brdflut_image_.initialize(device_, *physical_device_);
-        brdflut_sampler_.initialize(device_);
-    }
 
     void vulkan_sample::initialize_window() noexcept
     {
@@ -255,16 +173,35 @@ namespace vulkan
         present_queue_ = device_->getQueue(present_queue_index_, 0, device_.dispatch());
     }
 
+    void vulkan_sample::generate_model()
+    {
+        string err, warn;
+        const auto& model_path = path{"resource"} / "room" / "Enter a title.obj";
+
+        if(!LoadObj(
+            &model_.attribute,
+            &model_.shapes,
+            &model_.materials,
+            &err,
+            &warn,
+            model_path.u8string().c_str()
+        ))
+            throw std::runtime_error{err + warn};
+        std::cout << warn;
+    }
+
     void vulkan_sample::generate_shader_module_create_infos()
     {
         using shader_module_type = decltype(vertex_shader_module_);
         using shader_module_info_type = shader_module_type::info_type;
-        const auto shaders_path = path{"resource"} / "shaders";
-        const auto vertex_shader_code_path = shaders_path / "shader.vert";
-        const auto fragment_shader_code_path = shaders_path / "shader.frag";
+
+        const auto& shaders_path = path{"resource"} / "shaders";
+        const auto& vertex_shader_code_path = shaders_path / "shader.vert";
+        const auto& fragment_shader_code_path = shaders_path / "shader.frag";
         CompileOptions options;
         options.SetGenerateDebugInfo();
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
+
         cfin.open(vertex_shader_code_path);
         if(!cfin) throw std::runtime_error("failed to load vertex code file\n");
         csout << cfin.rdbuf();
@@ -282,6 +219,7 @@ namespace vulkan
             vertex_shader_module_ = shader_module_type{shader_module_info_type{std::move(spriv_code), {}}};
         }
         cfin.close();
+
         cfin.open(fragment_shader_code_path);
         if(!cfin) throw std::runtime_error("failed to load fragment code file\n");
         csout.str("");
@@ -321,39 +259,99 @@ namespace vulkan
         };
     }
 
-    void vulkan_sample::generate_texture_image_create_info()
+    map<string, stb::image<channel::rgb_alpha>> vulkan_sample::generate_texture_image_create_info()
     {
-        texture_image_src_ = stb::image<channel::rgb_alpha>{path{"resource"} / "modules" / "tex_u1_v1.jpg"};
-        texture_image_ = {
-            ImageType::e2D,
-            Extent3D{
-                static_cast<uint32_t>(texture_image_src_.width()),
-                static_cast<uint32_t>(texture_image_src_.height()),
-                1
-            }
+        const auto& directory = path{"resource"} / "room";
+        const auto& paths = {
+            directory / "Alyscamps_Arles_dos.jpg",
+            directory / "bad1.jpg",
+            directory / "belye.jpg",
+            directory / "chair1.jpg",
+            directory / "doors1.jpg",
+            directory / "floor1.jpg",
+            directory / "glass_left.png",
+            directory / "glass_right.png",
+            directory / "rest.jpg",
+            directory / "table.jpg",
+            directory / "veshalka.jpg",
+            directory / "wall_staff.jpg",
+            directory / "win_left.jpg",
+            directory / "win_right.jpg"
         };
+
+        map<string, stb::image<channel::rgb_alpha>> image_sources;
+
+        for(const auto& path : paths)
+            image_sources[path.generic_u8string()] = stb::image<channel::rgb_alpha>{path};
+
+        return image_sources;
     }
 
-    void vulkan_sample::generate_buffer_allocate_info()
+    pair<vector<vertex>, vector<uint32_t>> vulkan_sample::generate_buffer_allocate_info()
     {
-        transfer_memory_ = {
+        struct vertex_hasher
+        {
+            size_t operator()(const vertex& v)const
+            {
+                const auto hash_pos = std::hash<decltype(v.pos)>{}(v.pos);
+                const auto hash_color = std::hash<decltype(v.color)>{}(v.color);
+                const auto hash_tex_coordinate = std::hash<decltype(v.texture_coordinate)>{}(v.texture_coordinate);
+
+                return hash_pos ^ hash_color << 1 ^ hash_tex_coordinate << 2;
+            }
+        };
+
+        vector<uint32_t> indices;
+
+        unordered_map<vertex,uint32_t,vertex_hasher> vertices_map;
+        vector<vertex> vertices;
+
+        for(const auto& shape : model_.shapes)
+            for(const auto& index : shape.mesh.indices)
+            {
+                vertex vertex = {
+                    {
+                        model_.attribute.vertices[3 * index.vertex_index + 0],
+                        model_.attribute.vertices[3 * index.vertex_index + 1],
+                        model_.attribute.vertices[3 * index.vertex_index + 2]
+                    },
+                    vec3{1},
+                    {
+                        model_.attribute.texcoords[2 * index.texcoord_index],
+                        1 - model_.attribute.texcoords[2 * index.texcoord_index + 1]
+                    }
+                };
+                auto&& it = vertices_map.find(vertex);
+                if(it == vertices_map.cend())
+                {
+                    it = vertices_map.insert({vertex, static_cast<decltype(vertices_map)::mapped_type>(vertices_map.size())}).first;
+                    vertices.push_back(vertex);
+                }
+                indices.push_back(it->second);
+            }
+        transfer_memory_ = decltype(transfer_memory_){
             *physical_device_,
             device_,
-            array<BufferUsageFlags, 2>{BufferUsageFlagBits::eVertexBuffer, BufferUsageFlagBits::eIndexBuffer}
+            array<BufferUsageFlags, 2>{BufferUsageFlagBits::eVertexBuffer, BufferUsageFlagBits::eIndexBuffer},
+            {vertices.size(),indices.size()}
         };
+
+        return {vertices,indices};
     }
 
     void vulkan_sample::generate_texture_sampler_create_info()
     {
         using sampler_type = decltype(texture_sampler_);
         using sampler_info_type = sampler_type::info_type;
+
         sampler_info_type info;
         info.magFilter = info.minFilter = Filter::eLinear;
         info.mipmapMode = SamplerMipmapMode::eLinear;
         info.anisotropyEnable = true;
-        info.maxAnisotropy = 16;
+        info.maxAnisotropy = decltype(texture_images_)::mapped_type::max_anisotropy;
         info.compareOp = CompareOp::eAlways;
         info.borderColor = BorderColor::eIntOpaqueBlack;
+
         texture_sampler_ = sampler_type{std::move(info)};
     }
 
@@ -390,28 +388,26 @@ namespace vulkan
 
     void vulkan_sample::initialize_texture_image()
     {
-        generate_texture_image_create_info();
-        texture_image_.initialize(device_, *physical_device_);
-        write(texture_image_.buffer_memory(), device_, texture_image_src_.cbegin(), texture_image_src_.cend());
+        auto&& image_sources = generate_texture_image_create_info();
+
+        for(auto& source : image_sources)
+        {
+            auto&& texture_image = decltype(texture_images_)::mapped_type{
+                ImageType::e2D,
+                {static_cast<uint32_t>(source.second.width()), static_cast<uint32_t>(source.second.height()), 1}
+            };
+            texture_image.initialize(device_, *physical_device_);
+            texture_image.write_from_src(device_, source.second.cbegin(), source.second.cend());
+            texture_images_[source.first] = std::move(texture_image);
+        }
     }
 
     void vulkan_sample::initialize_buffer()
     {
-        generate_buffer_allocate_info();
+        auto&& [vertices,indices] = generate_buffer_allocate_info();
         transfer_memory_.initialize(*physical_device_);
-        set_vertices(
-            {
-                vertex{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-                vertex{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                vertex{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-                vertex{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-                vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-                vertex{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                vertex{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-                vertex{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-            }
-        );
-        set_indices({0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4});
+        transfer_memory_.write(std::move(vertices));
+        transfer_memory_.write(std::move(indices));
     }
 
     void vulkan_sample::initialize_texture_sampler() { texture_sampler_.initialize(device_); }
@@ -767,6 +763,7 @@ namespace vulkan
     {
         using graphics_pipeline_type = decltype(graphics_pipeline_);
         using graphics_pipeline_info_type = graphics_pipeline_type::info_type;
+
         GraphicsPipelineCreateInfo info;
         auto vertex_shader_stage = info_proxy<PipelineShaderStageCreateInfo>{
             "main",
@@ -828,18 +825,18 @@ namespace vulkan
             },
             PipelineColorBlendStateCreateInfo{{}, false, LogicOp::eCopy, 0, nullptr, std::array<float, 4>{0}}
         };
-        PipelineMultisampleStateCreateInfo multi_sample_state;
+
         info.renderPass = *render_pass_object;
         info.layout = *pipeline_layout_object;
         graphics_pipeline_ = graphics_pipeline_type{
-            info_proxy<graphics_pipeline_create_info>{
+            graphics_pipeline_info_type{
                 {std::move(vertex_shader_stage), std::move(fragment_shader_stage)},
                 {std::move(input_state)},
                 {std::move(input_assembly_state)},
                 {nullopt},
                 {std::move(viewport_state)},
                 {std::move(rasterization_state)},
-                {std::move(multi_sample_state)},
+                {{}},
                 {std::move(depth_stencil_state)},
                 {std::move(color_blend_state)},
                 {nullopt},
@@ -856,6 +853,7 @@ namespace vulkan
     {
         using descriptor_set_type = decltype(descriptor_sets_)::value_type;
         using descriptor_set_info_type = descriptor_set_type::info_type;
+
         descriptor_sets_.resize(image_view_objects.size());
         for(auto& descriptor_set : descriptor_sets_)
             descriptor_set = descriptor_set_type{
@@ -902,27 +900,29 @@ namespace vulkan
 
         front_command_buffer.begin(command_buffer_begin_info_, device_.dispatch());
 
-        brdflut_image_.write_transfer_command(device_, front_command_buffer);
-
         transfer_memory_.write_transfer_command(front_command_buffer);
 
-        texture_image_.write_transfer_command(device_, front_command_buffer);
+        for(auto& pair : texture_images_)
+        {
+            const auto& texture_image = pair.second;
+            texture_image.write_transfer_command(device_, front_command_buffer);
 
-        write_transfer_image_layout_command(
-            front_command_buffer,
-            *texture_image_.image(),
-            texture_image_.image_view().info().subresourceRange,
-            ImageLayout::eTransferDstOptimal,
-            ImageLayout::eShaderReadOnlyOptimal,
-            device_.dispatch()
-        );
+            write_transfer_image_layout_command(
+                front_command_buffer,
+                *texture_image.image(),
+                texture_image.image_view().info().subresourceRange,
+                ImageLayout::eTransferDstOptimal,
+                ImageLayout::eShaderReadOnlyOptimal,
+                device_.dispatch()
+            );
+
+            device_->flushMappedMemoryRanges(
+                MappedMemoryRange{*texture_image.buffer_memory(), 0, constant::whole_size<DeviceSize>},
+                device_.dispatch()
+            );
+        }
 
         front_command_buffer.end(device_.dispatch());
-
-        device_->flushMappedMemoryRanges(
-            MappedMemoryRange{*texture_image_.buffer_memory(), 0, constant::whole_size<DeviceSize>},
-            device_.dispatch()
-        );
 
         graphics_queue_.submit({front_submit_info}, nullptr, device_.dispatch());
     }
@@ -944,7 +944,7 @@ namespace vulkan
                         {*descriptor_set, 0, 0, 1, DescriptorType::eUniformBuffer}
                     },
                     info_proxy<WriteDescriptorSet>{
-                        {{*texture_sampler_, *texture_image_.image_view(), ImageLayout::eShaderReadOnlyOptimal}},
+                        {{*texture_sampler_, *texture_images_.cbegin()->second.image_view(), ImageLayout::eShaderReadOnlyOptimal}},
                         {},
                         {},
                         {*descriptor_set, 1, 0, 1, DescriptorType::eCombinedImageSampler}
@@ -1030,6 +1030,7 @@ namespace vulkan
             initialize_physical_device();
             initialize_device();
             initialize_queue();
+            generate_model();
             initialize_shader_module();
             initialize_descriptor_set_layout();
             initialize_texture_image();
@@ -1095,9 +1096,7 @@ namespace vulkan
         const VkDebugUtilsMessageSeverityFlagBitsEXT flag_bits,
         const VkDebugUtilsMessageTypeFlagsEXT type_flags,
         const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
-        void*
-
-    
+        [[maybe_unused]] void* data
     )
     {
         const auto flag = DebugUtilsMessageSeverityFlagBitsEXT{flag_bits};
@@ -1153,11 +1152,5 @@ namespace vulkan
     void vulkan_sample::set_indices(decltype(transfer_memory_)::value_type<uint32_t> indices)
     {
         transfer_memory_.write<uint32_t>(std::move(indices));
-    }
-
-    void vulkan_sample::set_image(decltype(texture_image_src_) image)
-    {
-        texture_image_src_ = std::move(image);
-        write(texture_image_.buffer_memory(), device_, texture_image_src_);
     }
 }

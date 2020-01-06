@@ -19,6 +19,7 @@ namespace vulkan::utility
 
     [[nodiscard]] pair<DeviceSize, vector<DeviceSize>> generate_memory_size_and_offsets(
         vector<pair<MemoryRequirements, size_t>>&
+    
     );
 
     [[nodiscard]] pair<device_memory_object, vector<DeviceSize>> generate_buffer_memory_info(
@@ -89,19 +90,13 @@ namespace vulkan::utility
             base_array_values(
                 const device_object&,
                 const array<BufferUsageFlags, type_list::size>&,
-                const decltype(sizes_)&
-
-
-            
+                const decltype(sizes_)& sizes
             );
             base_array_values(
                 const PhysicalDevice&,
                 const device_object&,
                 const array<BufferUsageFlags, type_list::size>&,
-                const decltype(sizes_)&
-
-
-            
+                const decltype(sizes_)& sizes
             );
 
             void initialize(const PhysicalDevice&);
@@ -155,6 +150,7 @@ namespace vulkan::utility
         {
         public:
             using base = base_array_values<vector>;
+            using base::base;
         };
     };
 }

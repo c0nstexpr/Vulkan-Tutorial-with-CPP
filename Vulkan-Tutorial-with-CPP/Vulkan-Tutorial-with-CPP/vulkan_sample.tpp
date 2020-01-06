@@ -80,4 +80,9 @@ namespace vulkan
 	{
 		return transfer_memory_.read<uint32_t>();
 	}
+
+	constexpr auto vulkan_sample::get_window() const-> const decltype(window_)&
+	{
+		return window_;
+	}
 }

@@ -187,6 +187,7 @@
     <ClCompile Include="vulkan\utility\obejct\object.cpp" />
     <ClCompile Include="vulkan\utility\shaderc\shaderc.cpp" />
     <ClCompile Include="vulkan\utility\stb\image.cpp" />
+    <ClCompile Include="vulkan\utility\utility.cpp" />
     <ClCompile Include="vulkan\utility\utility_core.cpp" />
     <ClCompile Include="vulkan_sample.cpp" />
   </ItemGroup>
@@ -204,6 +205,7 @@
     <None Include="vulkan_sample.tpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="glm_camera.h" />
     <ClInclude Include="utility\constant\constant.h" />
     <ClInclude Include="utility\constant\numberic.h" />
     <ClInclude Include="utility\property.h" />

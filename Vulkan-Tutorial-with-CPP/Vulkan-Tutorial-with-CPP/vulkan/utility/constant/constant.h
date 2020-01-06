@@ -4,14 +4,6 @@
 namespace vulkan::utility::constant
 {
     using namespace vk;
-    using std::pair;
-    using glm::float32;
-    using glm::float64;
-    using glm::vec2;
-    using glm::vec3;
-    using glm::vec4;
-    using glm::uvec4;
-    using glm::ivec2;
 
     template<typename T = DeviceSize>
     inline constexpr auto whole_size = T{VK_WHOLE_SIZE};
@@ -42,6 +34,9 @@ namespace vulkan::utility::constant
 
     template<>
     struct format<Format::eR16Sint> :value_identity<Format::eR16Sint>, type_identity<int16_t> {};
+
+    template<>
+    struct format<Format::eR16Sfloat> :value_identity<Format::eR16Sfloat>, type_identity<detail::hdata> {};
 
     template<>
     struct format<Format::eR16Unorm> :value_identity<Format::eR16Unorm>, type_identity<uint16_t> {};
@@ -128,10 +123,13 @@ namespace vulkan::utility::constant
     struct format<Format::eR16G16Sint> :value_identity<Format::eR16G16Sint>, type_identity<i16vec2> {};
 
     template<>
+    struct format<Format::eR16G16Sfloat> :value_identity<Format::eR16G16Sfloat>, type_identity<vec<2,detail::hdata>> {};
+
+    template<>
     struct format<Format::eR16G16Unorm> :value_identity<Format::eR16G16Unorm>, type_identity<u16vec2> {};
 
     template<>
-    struct format<Format::eR16G16Snorm> :value_identity<Format::eR16G16Sfloat>, type_identity<i16vec2> {};
+    struct format<Format::eR16G16Snorm> :value_identity<Format::eR16G16Snorm>, type_identity<i16vec2> {};
 
     template<>
     struct format<Format::eR16G16B16Uint> :value_identity<Format::eR16G16B16Uint>, type_identity<u16vec3> {};
@@ -140,10 +138,13 @@ namespace vulkan::utility::constant
     struct format<Format::eR16G16B16Sint> :value_identity<Format::eR16G16B16Sint>, type_identity<i16vec3> {};
 
     template<>
+    struct format<Format::eR16G16B16Sfloat> :value_identity<Format::eR16G16B16Sfloat>, type_identity<vec<3,detail::hdata>> {};
+
+    template<>
     struct format<Format::eR16G16B16Unorm> :value_identity<Format::eR16G16B16Unorm>, type_identity<u16vec3> {};
 
     template<>
-    struct format<Format::eR16G16B16Snorm> :value_identity<Format::eR16G16B16Sfloat>, type_identity<i16vec3> {};
+    struct format<Format::eR16G16B16Snorm> :value_identity<Format::eR16G16B16Snorm>, type_identity<i16vec3> {};
 
     template<>
     struct format<Format::eR16G16B16A16Uint> :value_identity<Format::eR16G16B16A16Uint>, type_identity<u16vec4> {};
@@ -152,10 +153,13 @@ namespace vulkan::utility::constant
     struct format<Format::eR16G16B16A16Sint> :value_identity<Format::eR16G16B16A16Sint>, type_identity<i16vec4> {};
 
     template<>
+    struct format<Format::eR16G16B16A16Sfloat> :value_identity<Format::eR16G16B16A16Sfloat>, type_identity<vec<4,detail::hdata>> {};
+
+    template<>
     struct format<Format::eR16G16B16A16Unorm> :value_identity<Format::eR16G16B16A16Unorm>, type_identity<u16vec4> {};
 
     template<>
-    struct format<Format::eR16G16B16A16Snorm> :value_identity<Format::eR16G16B16A16Sfloat>, type_identity<i16vec4> {};
+    struct format<Format::eR16G16B16A16Snorm> :value_identity<Format::eR16G16B16A16Snorm>, type_identity<i16vec4> {};
 
     template<>
     struct format<Format::eR32G32Uint> :value_identity<Format::eR32G32Uint>, type_identity<u32vec2> {};
