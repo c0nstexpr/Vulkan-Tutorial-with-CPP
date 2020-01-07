@@ -8,11 +8,13 @@ static glm_camera glm_camera{};
 
 vulkan_sample sample;
 
-void perform_camera_update(GLFWwindow* window, const int key, const float speed_up_ratio)
+static float x_degree{};
+static float y_degree{};
+static float z_degree{};
+static constexpr vec2 center{sample.width / 2, sample.height / 2};
+
+void update_camera()
 {
-    static float y_degree{};
-    static float x_degree{};
-    static float z_degree{};
     static constexpr mat4 model{1};
     static const auto& proj = []
     {
@@ -21,6 +23,15 @@ void perform_camera_update(GLFWwindow* window, const int key, const float speed_
         return p;
     }();
 
+    glm_camera.quaternion = qua{vec3{x_degree, y_degree, z_degree}};
+
+    sample.flush_transform_to_memory();
+
+    sample.set_transform({proj * glm_camera.get_view_mat() * model});
+}
+
+void perform_camera_update(GLFWwindow* window, const int key, const float speed_up_ratio)
+{
     switch(key)
     {
     case GLFW_KEY_W: { glm_camera.pos.z += speed_up_ratio; }
@@ -34,14 +45,6 @@ void perform_camera_update(GLFWwindow* window, const int key, const float speed_
     case GLFW_KEY_Q: { glm_camera.pos.y -= speed_up_ratio; }
     break;
     case GLFW_KEY_E: { glm_camera.pos.y += speed_up_ratio; }
-    break;
-    case GLFW_KEY_KP_4: { y_degree -= speed_up_ratio; }
-    break;
-    case GLFW_KEY_KP_6: { y_degree += speed_up_ratio; }
-    break;
-    case GLFW_KEY_KP_8: { x_degree += speed_up_ratio; }
-    break;
-    case GLFW_KEY_KP_2: { x_degree -= speed_up_ratio; }
     break;
     case GLFW_KEY_KP_ADD: { z_degree += speed_up_ratio; }
     break;
@@ -58,11 +61,7 @@ void perform_camera_update(GLFWwindow* window, const int key, const float speed_
     default: break;
     }
 
-    glm_camera.quaternion = qua{vec3{x_degree, y_degree, z_degree}};
-
-    sample.flush_transform_to_memory();
-
-    sample.set_transform({proj * glm_camera.get_view_mat() * model});
+    update_camera();
 }
 
 void key_callback(GLFWwindow* window, const int key, const int, const int action, const int)
@@ -70,13 +69,21 @@ void key_callback(GLFWwindow* window, const int key, const int, const int action
     static auto speed_up_ratio = 1.0f;
     switch(action)
     {
-    case GLFW_REPEAT: speed_up_ratio += 0.01f;
+    case GLFW_REPEAT: speed_up_ratio += 0.1f;
     case GLFW_PRESS: perform_camera_update(window, key, speed_up_ratio);
         break;
-    case GLFW_RELEASE: speed_up_ratio = 0.01f;
+    case GLFW_RELEASE: speed_up_ratio = 0.1f;
         break;
     default: break;
     }
+}
+
+void cursor_callback(GLFWwindow* window, const double x, const double y)
+{
+    y_degree += static_cast<float>(x - center.x) * 0.001f;
+    x_degree += static_cast<float>(y - center.y) * 0.001f;
+    glfwSetCursorPos(window, center.x, center.y);
+    update_camera();
 }
 
 int main()
@@ -91,6 +98,9 @@ int main()
         }
 
         glfwSetKeyCallback(sample.get_window(), key_callback);
+        glfwSetCursorPosCallback(sample.get_window(), cursor_callback);
+        glfwSetInputMode(sample.get_window(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glfwSetCursorPos(sample.get_window(), center.x, center.y);
 
         key_callback(sample.get_window(),GLFW_KEY_HOME, 0,GLFW_PRESS, 0);
 
