@@ -97,10 +97,10 @@ namespace vulkan::utility
 	{
 		using base_info_type = T;
 
-	public:
 		T info;
 
-		constexpr info_proxy_base(base_info_type i = base_info_type{}) noexcept : info(std::move(i)) {}
+		constexpr info_proxy_base(base_info_type i = base_info_type{}) noexcept :
+			info(std::move(i)) {}
 
 #define DEFAULT_COPY_CONSTRUCTOR(TYPE) TYPE(const TYPE& right) : base(right.info) { property_copy(right); }
 #define DEFAULT_MOVE_CONSTRUCTOR(TYPE)\
@@ -125,8 +125,9 @@ namespace vulkan::utility
 		DEFAULT_MOVE_ASSIGN_CONSTRUCTOR(TYPE)\
 		DEFAULT_DECONSTRUCTOR(TYPE)
 
-		constexpr operator base_info_type& () { return info; }
-		constexpr operator const base_info_type& () const { return info; }
+		constexpr operator base_info_type&() { return info; }
+
+		constexpr operator const base_info_type&() const { return info; }
 	};
 
 	template<>
@@ -144,10 +145,10 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(application_name_),
-				decltype(engine_name_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(application_name_),
+			decltype(engine_name_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -160,14 +161,14 @@ namespace vulkan::utility
 
 		const property<info_proxy, string> application_name_property{
 			*this,
-				& info_proxy::get_application_name,
-				& info_proxy::set_application_name
+			&info_proxy::get_application_name,
+			&info_proxy::set_application_name
 		};
 
 		const property<info_proxy, string> engine_name_property{
 			*this,
-				& info_proxy::get_engine_name,
-				& info_proxy::set_engine_name
+			&info_proxy::get_engine_name,
+			&info_proxy::set_engine_name
 		};
 	};
 
@@ -190,11 +191,11 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(application_info_),
-				decltype(extension_name_strs_) = {},
-				decltype(layer_name_strs_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(application_info_),
+			decltype(extension_name_strs_) = {},
+			decltype(layer_name_strs_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -210,20 +211,20 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(application_info_)> application_info_property{
 			*this,
-				& info_proxy::get_application_info,
-				& info_proxy::set_application_info,
+			&info_proxy::get_application_info,
+			&info_proxy::set_application_info,
 		};
 
 		const property<info_proxy, decltype(extension_name_strs_)> extension_name_strs_property{
 			*this,
-				& info_proxy::get_extension_name_strs,
-				& info_proxy::set_extension_name_strs,
+			&info_proxy::get_extension_name_strs,
+			&info_proxy::set_extension_name_strs,
 		};
 
 		const property<info_proxy, decltype(layer_name_strs_)> layer_name_strs_property{
 			*this,
-				& info_proxy::get_layer_name_strs,
-				& info_proxy::set_layer_name_strs,
+			&info_proxy::get_layer_name_strs,
+			&info_proxy::set_layer_name_strs,
 		};
 	};
 
@@ -243,13 +244,13 @@ namespace vulkan::utility
 	private:
 		vector<decay_to_origin_t<decltype(info.pQueuePriorities)>> priorities_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(priorities_), decltype(info) = {});
+		explicit info_proxy(decltype(priorities_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -258,8 +259,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(priorities_)> priorities_property{
 			*this,
-				& info_proxy::get_priorities,
-				& info_proxy::set_priorities
+			&info_proxy::get_priorities,
+			&info_proxy::set_priorities
 		};
 
 		constexpr bool operator>(const info_proxy& right) const noexcept
@@ -277,20 +278,11 @@ namespace vulkan::utility
 			return info.queueFamilyIndex == right.info.queueFamilyIndex;
 		}
 
-		constexpr bool operator>=(const info_proxy& right) const noexcept
-		{
-			return *this > right || *this == right;
-		}
+		constexpr bool operator>=(const info_proxy& right) const noexcept { return *this > right || *this == right; }
 
-		constexpr bool operator<=(const info_proxy& right) const noexcept
-		{
-			return *this < right || *this == right;
-		}
+		constexpr bool operator<=(const info_proxy& right) const noexcept { return *this < right || *this == right; }
 
-		constexpr bool operator!=(const info_proxy& right) const noexcept
-		{
-			return !(*this == right);
-		}
+		constexpr bool operator!=(const info_proxy& right) const noexcept { return !(*this == right); }
 	};
 
 	template<>
@@ -309,17 +301,17 @@ namespace vulkan::utility
 		vector<string> extension_name_strs_;
 		optional<decay_to_origin_t<decltype(info.pEnabledFeatures)>> features_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(queue_create_infos_set_),
-				decltype(extension_name_strs_) = {},
-				decltype(features_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(queue_create_infos_set_),
+			decltype(extension_name_strs_) = {},
+			decltype(features_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -335,18 +327,18 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(queue_create_infos_set_)> queue_create_infos_set_property{
 			*this,
-				& info_proxy::get_queue_create_info_set,
-				& info_proxy::set_queue_create_info_set,
+			&info_proxy::get_queue_create_info_set,
+			&info_proxy::set_queue_create_info_set,
 		};
 		const property<info_proxy, decltype(extension_name_strs_)> extension_name_strs_property{
 			*this,
-				& info_proxy::get_extension_name_strs,
-				& info_proxy::set_extension_names,
+			&info_proxy::get_extension_name_strs,
+			&info_proxy::set_extension_names,
 		};
 		const property<info_proxy, decltype(features_)> features_property{
 			*this,
-				& info_proxy::get_features,
-				& info_proxy::set_features,
+			&info_proxy::get_features,
+			&info_proxy::set_features,
 		};
 	};
 
@@ -367,13 +359,13 @@ namespace vulkan::utility
 		vector<decay_to_origin_t<decltype(info.pQueueFamilyIndices)>> queue_family_indices_;
 		set<std::decay_t<decltype(queue_family_indices_)::value_type>> queue_family_indices_set_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
+		explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -381,10 +373,10 @@ namespace vulkan::utility
 		void set_queue_family_indices_set(decltype(queue_family_indices_set_));
 
 		const property<info_proxy, decltype(queue_family_indices_set_)>
-			queue_family_indices_set_property{
+		queue_family_indices_set_property{
 			*this,
-				& info_proxy::get_queue_family_indices_set,
-				& info_proxy::set_queue_family_indices_set,
+			&info_proxy::get_queue_family_indices_set,
+			&info_proxy::set_queue_family_indices_set,
 		};
 	};
 
@@ -401,8 +393,8 @@ namespace vulkan::utility
 	{
 		using base = info_proxy_base;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	private:
 		vector<decay_to_origin_t<decltype(info.pInputAttachments)>> input_attachments_;
@@ -414,13 +406,14 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(input_attachments_),
-				decltype(color_attachments_) = {},
-				decltype(resolve_attachments_) = {},
-				decltype(depth_attachment_) = {},
-				decltype(preserve_attachments_) = {},
-				decltype(info) = {});
+		explicit info_proxy(
+			decltype(input_attachments_),
+			decltype(color_attachments_) = {},
+			decltype(resolve_attachments_) = {},
+			decltype(depth_attachment_) = {},
+			decltype(preserve_attachments_) = {},
+			decltype(info) = {}
+		);
 
 		info_proxy(base_info_type = {});
 
@@ -441,28 +434,28 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(input_attachments_)> input_attachments_property{
 			*this,
-				& info_proxy::get_input_attachments,
-				& info_proxy::set_input_attachments
+			&info_proxy::get_input_attachments,
+			&info_proxy::set_input_attachments
 		};
 		const property<info_proxy, decltype(color_attachments_)> color_attachments_property{
 			*this,
-				& info_proxy::get_color_attachments,
-				& info_proxy::set_color_attachments
+			&info_proxy::get_color_attachments,
+			&info_proxy::set_color_attachments
 		};
 		const property<info_proxy, decltype(resolve_attachments_)> resolve_attachments_property{
 			*this,
-				& info_proxy::get_resolve_attachments,
-				& info_proxy::set_resolve_attachments
+			&info_proxy::get_resolve_attachments,
+			&info_proxy::set_resolve_attachments
 		};
 		const property<info_proxy, decltype(depth_attachment_)> depth_attachment_property{
 			*this,
-				& info_proxy::get_depth_attachment,
-				& info_proxy::set_depth_attachment
+			&info_proxy::get_depth_attachment,
+			&info_proxy::set_depth_attachment
 		};
 		const property<info_proxy, decltype(preserve_attachments_)> preserve_attachments_property{
 			*this,
-				& info_proxy::get_preserve_attachments,
-				& info_proxy::set_preserve_attachments
+			&info_proxy::get_preserve_attachments,
+			&info_proxy::set_preserve_attachments
 		};
 	};
 
@@ -477,17 +470,17 @@ namespace vulkan::utility
 		vector<info_proxy<decltype(subpass_descriptions_)::value_type>> subpass_descriptions_info_proxies_;
 		vector<decay_to_origin_t<decltype(info.pDependencies)>> dependencies_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(attachment_descriptions_),
-				decltype(subpass_descriptions_info_proxies_) = {},
-				decltype(dependencies_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(attachment_descriptions_),
+			decltype(subpass_descriptions_info_proxies_) = {},
+			decltype(dependencies_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -495,7 +488,8 @@ namespace vulkan::utility
 		constexpr const decltype(attachment_descriptions_)& get_attachment_descriptions() const noexcept;
 		void set_attachment_descriptions(decltype(attachment_descriptions_));
 
-		constexpr const decltype(subpass_descriptions_info_proxies_)& get_subpass_descriptions_info_proxies() const noexcept;
+		constexpr const decltype(subpass_descriptions_info_proxies_)&
+		get_subpass_descriptions_info_proxies() const noexcept;
 		void set_subpass_descriptions_info_proxies(decltype(subpass_descriptions_info_proxies_));
 
 		constexpr const decltype(dependencies_)& get_dependencies() const noexcept;
@@ -503,18 +497,19 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(attachment_descriptions_)> attachment_descriptions_property{
 			*this,
-				& info_proxy::get_attachment_descriptions,
-				& info_proxy::set_attachment_descriptions
+			&info_proxy::get_attachment_descriptions,
+			&info_proxy::set_attachment_descriptions
 		};
-		const property<info_proxy, decltype(subpass_descriptions_info_proxies_)> subpass_descriptions_info_proxies_property{
+		const property<info_proxy, decltype(subpass_descriptions_info_proxies_)>
+		subpass_descriptions_info_proxies_property{
 			*this,
-				& info_proxy::get_subpass_descriptions_info_proxies,
-				& info_proxy::set_subpass_descriptions_info_proxies
+			&info_proxy::get_subpass_descriptions_info_proxies,
+			&info_proxy::set_subpass_descriptions_info_proxies
 		};
 		const property<info_proxy, decltype(dependencies_)> dependencies_property{
 			*this,
-				& info_proxy::get_dependencies,
-				& info_proxy::set_dependencies
+			&info_proxy::get_dependencies,
+			&info_proxy::set_dependencies
 		};
 	};
 
@@ -534,13 +529,13 @@ namespace vulkan::utility
 	private:
 		vector<decay_to_origin_t<decltype(info.pAttachments)>> image_views_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(image_views_), decltype(info) = {});
+		explicit info_proxy(decltype(image_views_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -549,8 +544,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(image_views_)> image_views_property{
 			*this,
-				& info_proxy::get_image_views,
-				& info_proxy::set_image_views
+			&info_proxy::get_image_views,
+			&info_proxy::set_image_views
 		};
 	};
 
@@ -570,13 +565,13 @@ namespace vulkan::utility
 	private:
 		vector<decay_to_origin_t<decltype(info.pCode)>> codes_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(codes_), decltype(info) = {});
+		explicit info_proxy(decltype(codes_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -585,8 +580,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(codes_)> codes_property{
 			*this,
-				& info_proxy::get_codes,
-				& info_proxy::set_codes,
+			&info_proxy::get_codes,
+			&info_proxy::set_codes,
 		};
 	};
 
@@ -607,13 +602,13 @@ namespace vulkan::utility
 		vector<decay_to_origin_t<decltype(info.pQueueFamilyIndices)>> queue_family_indices_;
 		set<std::decay_t<decltype(queue_family_indices_)::value_type>> queue_family_indices_set_;
 
-		void property_copy(const info_proxy&)const;
-		constexpr void property_move(info_proxy&&)const noexcept;
+		void property_copy(const info_proxy&) const;
+		constexpr void property_move(info_proxy&&) const noexcept;
 
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
+		explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -621,10 +616,10 @@ namespace vulkan::utility
 		void set_queue_family_indices_set(decltype(queue_family_indices_set_));
 
 		const property<info_proxy, decltype(queue_family_indices_set_)>
-			queue_family_indices_set_property{
+		queue_family_indices_set_property{
 			*this,
-				& info_proxy::get_queue_family_indices_set,
-				& info_proxy::set_queue_family_indices_set,
+			&info_proxy::get_queue_family_indices_set,
+			&info_proxy::set_queue_family_indices_set,
 		};
 	};
 
@@ -650,7 +645,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(map_entries_), decltype(info) = {});
+		explicit info_proxy(decltype(map_entries_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -659,8 +654,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(map_entries_)> map_entries_property{
 			*this,
-				& info_proxy::get_map_entries,
-				& info_proxy::set_map_entries
+			&info_proxy::get_map_entries,
+			&info_proxy::set_map_entries
 		};
 	};
 
@@ -678,10 +673,10 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(entry_name_),
-				decltype(specialization_info_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(entry_name_),
+			decltype(specialization_info_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -694,13 +689,13 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(entry_name_)> entry_name_property{
 			*this,
-				& info_proxy::get_entry_name,
-				& info_proxy::set_entry_name
+			&info_proxy::get_entry_name,
+			&info_proxy::set_entry_name
 		};
 		const property<info_proxy, decltype(specialization_info_)> specialization_info_property{
 			*this,
-				& info_proxy::get_specialization_info,
-				& info_proxy::set_specialization_info
+			&info_proxy::get_specialization_info,
+			&info_proxy::set_specialization_info
 		};
 	};
 
@@ -719,33 +714,33 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(vertex_input_binding_descriptions_),
-				decltype(vertex_input_attribute_descriptions_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(vertex_input_binding_descriptions_),
+			decltype(vertex_input_attribute_descriptions_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
 
 		constexpr const decltype(vertex_input_binding_descriptions_)&
-			get_vertex_input_binding_descriptions() const noexcept;
+		get_vertex_input_binding_descriptions() const noexcept;
 		void set_vertex_input_binding_descriptions(decltype(vertex_input_binding_descriptions_));
 
 		constexpr const decltype(vertex_input_attribute_descriptions_)&
-			get_vertex_input_attribute_descriptions() const noexcept;
+		get_vertex_input_attribute_descriptions() const noexcept;
 		void set_vertex_input_attribute_descriptions(decltype(vertex_input_attribute_descriptions_));
 
 		const property<info_proxy, decltype(vertex_input_binding_descriptions_)>
-			vertex_input_binding_descriptions_property{
+		vertex_input_binding_descriptions_property{
 			*this,
-				& info_proxy::get_vertex_input_binding_descriptions,
-				& info_proxy::set_vertex_input_binding_descriptions
+			&info_proxy::get_vertex_input_binding_descriptions,
+			&info_proxy::set_vertex_input_binding_descriptions
 		};
 		const property<info_proxy, decltype(vertex_input_attribute_descriptions_)>
-			vertex_input_attribute_descriptions_property{
+		vertex_input_attribute_descriptions_property{
 			*this,
-				& info_proxy::get_vertex_input_attribute_descriptions,
-				& info_proxy::set_vertex_input_attribute_descriptions
+			&info_proxy::get_vertex_input_attribute_descriptions,
+			&info_proxy::set_vertex_input_attribute_descriptions
 		};
 	};
 
@@ -764,10 +759,10 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(viewports_),
-				decltype(scissors_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(viewports_),
+			decltype(scissors_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -780,13 +775,13 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(viewports_)> viewports_property{
 			*this,
-				& info_proxy::get_viewports,
-				& info_proxy::set_viewports
+			&info_proxy::get_viewports,
+			&info_proxy::set_viewports
 		};
 		const property<info_proxy, decltype(scissors_)> scissors_property{
 			*this,
-				& info_proxy::get_scissors,
-				& info_proxy::set_scissors
+			&info_proxy::get_scissors,
+			&info_proxy::set_scissors
 		};
 	};
 
@@ -804,7 +799,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(attachment_states_), decltype(info) = {});
+		explicit info_proxy(decltype(attachment_states_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -813,8 +808,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(attachment_states_)> attachment_states_property{
 			*this,
-				& info_proxy::get_attachment_states,
-				& info_proxy::set_attachment_states
+			&info_proxy::get_attachment_states,
+			&info_proxy::set_attachment_states
 		};
 	};
 
@@ -833,10 +828,10 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(set_layouts_),
-				decltype(push_const_ranges_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(set_layouts_),
+			decltype(push_const_ranges_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -849,13 +844,13 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(set_layouts_)> set_layouts_property{
 			*this,
-				& info_proxy::get_set_layouts,
-				& info_proxy::set_set_layouts
+			&info_proxy::get_set_layouts,
+			&info_proxy::set_set_layouts
 		};
 		const property<info_proxy, decltype(push_const_ranges_)> push_const_ranges_property{
 			*this,
-				& info_proxy::get_push_const_ranges,
-				& info_proxy::set_push_const_ranges
+			&info_proxy::get_push_const_ranges,
+			&info_proxy::set_push_const_ranges
 		};
 	};
 
@@ -898,18 +893,18 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(stage_info_proxies_),
-				decltype(vertex_input_state_) = {},
-				decltype(input_assembly_state_) = {},
-				decltype(tessellation_state_) = {},
-				decltype(viewport_state_) = {},
-				decltype(rasterization_state_) = {},
-				decltype(multi_sample_state_) = {},
-				decltype(depth_stencil_state_) = {},
-				decltype(color_blend_state_) = {},
-				decltype(dynamic_state_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(stage_info_proxies_),
+			decltype(vertex_input_state_) = {},
+			decltype(input_assembly_state_) = {},
+			decltype(tessellation_state_) = {},
+			decltype(viewport_state_) = {},
+			decltype(rasterization_state_) = {},
+			decltype(multi_sample_state_) = {},
+			decltype(depth_stencil_state_) = {},
+			decltype(color_blend_state_) = {},
+			decltype(dynamic_state_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -946,53 +941,53 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(stage_info_proxies_)> stages_info_proxies_property{
 			*this,
-				& info_proxy::get_stage_info_proxies,
-				& info_proxy::set_stage_info_proxies,
+			&info_proxy::get_stage_info_proxies,
+			&info_proxy::set_stage_info_proxies,
 		};
 		const property<info_proxy, decltype(vertex_input_state_)> vertex_input_state_property{
 			*this,
-				& info_proxy::get_vertex_input_state,
-				& info_proxy::set_vertex_input_state,
+			&info_proxy::get_vertex_input_state,
+			&info_proxy::set_vertex_input_state,
 		};
 		const property<info_proxy, decltype(input_assembly_state_)> input_assembly_state_property{
 			*this,
-				& info_proxy::get_input_assembly_state,
-				& info_proxy::set_input_assembly_state,
+			&info_proxy::get_input_assembly_state,
+			&info_proxy::set_input_assembly_state,
 		};
 		const property<info_proxy, decltype(tessellation_state_)> tessellation_state_property{
 			*this,
-				& info_proxy::get_tessellation_state,
-				& info_proxy::set_tessellation_state,
+			&info_proxy::get_tessellation_state,
+			&info_proxy::set_tessellation_state,
 		};
 		const property<info_proxy, decltype(viewport_state_)> viewport_state_property{
 			*this,
-				& info_proxy::get_viewport_state,
-				& info_proxy::set_viewport_state,
+			&info_proxy::get_viewport_state,
+			&info_proxy::set_viewport_state,
 		};
 		const property<info_proxy, decltype(rasterization_state_)> rasterization_state_property{
 			*this,
-				& info_proxy::get_rasterization_state,
-				& info_proxy::set_rasterization_state,
+			&info_proxy::get_rasterization_state,
+			&info_proxy::set_rasterization_state,
 		};
 		const property<info_proxy, decltype(multi_sample_state_)> multi_sample_state_property{
 			*this,
-				& info_proxy::get_multi_sample_state,
-				& info_proxy::set_multi_sample_state,
+			&info_proxy::get_multi_sample_state,
+			&info_proxy::set_multi_sample_state,
 		};
 		const property<info_proxy, decltype(depth_stencil_state_)> depth_stencil_state_property{
 			*this,
-				& info_proxy::get_depth_stencil_state,
-				& info_proxy::set_depth_stencil_state,
+			&info_proxy::get_depth_stencil_state,
+			&info_proxy::set_depth_stencil_state,
 		};
 		const property<info_proxy, decltype(color_blend_state_)> color_blend_state_property{
 			*this,
-				& info_proxy::get_color_blend_state,
-				& info_proxy::set_color_blend_state,
+			&info_proxy::get_color_blend_state,
+			&info_proxy::set_color_blend_state,
 		};
 		const property<info_proxy, decltype(dynamic_state_)> dynamic_state_property{
 			*this,
-				& info_proxy::get_dynamic_state,
-				& info_proxy::set_dynamic_state,
+			&info_proxy::get_dynamic_state,
+			&info_proxy::set_dynamic_state,
 		};
 	};
 
@@ -1017,7 +1012,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(inheritance_info_), decltype(info) = {});
+		explicit info_proxy(decltype(inheritance_info_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1026,8 +1021,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(inheritance_info_)> inheritance_info_property{
 			*this,
-				& info_proxy::get_inheritance_info,
-				& info_proxy::set_inheritance_info
+			&info_proxy::get_inheritance_info,
+			&info_proxy::set_inheritance_info
 		};
 	};
 
@@ -1045,7 +1040,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(clear_values_), decltype(info) = {});
+		explicit info_proxy(decltype(clear_values_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1054,8 +1049,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(clear_values_)> clear_values_property{
 			*this,
-				& info_proxy::get_clear_values,
-				& info_proxy::set_clear_values
+			&info_proxy::get_clear_values,
+			&info_proxy::set_clear_values
 		};
 	};
 
@@ -1073,7 +1068,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(samplers_), decltype(info) = {});
+		explicit info_proxy(decltype(samplers_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1082,8 +1077,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(samplers_)> samplers_property{
 			*this,
-				& info_proxy::get_samplers,
-				& info_proxy::set_samplers
+			&info_proxy::get_samplers,
+			&info_proxy::set_samplers
 		};
 	};
 
@@ -1103,7 +1098,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(bindings_proxies_), decltype(info) = {});
+		explicit info_proxy(decltype(bindings_proxies_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1112,8 +1107,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(bindings_proxies_)> bindings_proxies_property{
 			*this,
-				& info_proxy::get_binding_proxies,
-				& info_proxy::set_binding_proxies
+			&info_proxy::get_binding_proxies,
+			&info_proxy::set_binding_proxies
 		};
 	};
 
@@ -1138,7 +1133,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(pool_sizes_), decltype(info) = {});
+		explicit info_proxy(decltype(pool_sizes_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1147,8 +1142,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(pool_sizes_)> pool_sizes_property{
 			*this,
-				& info_proxy::get_pool_sizes,
-				& info_proxy::set_pool_sizes
+			&info_proxy::get_pool_sizes,
+			&info_proxy::set_pool_sizes
 		};
 	};
 
@@ -1174,7 +1169,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(descriptor_set_layouts_), decltype(info) = {});
+		explicit info_proxy(decltype(descriptor_set_layouts_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1183,8 +1178,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(descriptor_set_layouts_)> descriptor_set_layouts_property{
 			*this,
-				& info_proxy::get_descriptor_set_layouts,
-				& info_proxy::set_descriptor_set_layouts
+			&info_proxy::get_descriptor_set_layouts,
+			&info_proxy::set_descriptor_set_layouts
 		};
 	};
 
@@ -1212,11 +1207,11 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(image_infos_),
-				decltype(buffer_infos_) = {},
-				decltype(texel_buffer_views_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(image_infos_),
+			decltype(buffer_infos_) = {},
+			decltype(texel_buffer_views_) = {},
+			decltype(info) = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -1232,18 +1227,18 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(image_infos_)> image_infos_property{
 			*this,
-				& info_proxy::get_image_infos,
-				& info_proxy::set_image_infos
+			&info_proxy::get_image_infos,
+			&info_proxy::set_image_infos
 		};
 		const property<info_proxy, decltype(buffer_infos_)> buffer_infos_property{
 			*this,
-				& info_proxy::get_buffer_infos,
-				& info_proxy::set_buffer_infos
+			&info_proxy::get_buffer_infos,
+			&info_proxy::set_buffer_infos
 		};
 		const property<info_proxy, decltype(texel_buffer_views_)> texel_buffer_views_property{
 			*this,
-				& info_proxy::get_texel_buffer_views,
-				& info_proxy::set_texel_buffer_views
+			&info_proxy::get_texel_buffer_views,
+			&info_proxy::set_texel_buffer_views
 		};
 	};
 
@@ -1264,12 +1259,12 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(wait_semaphores_),
-				decltype(dst_stage_mask_) = {},
-				decltype(command_buffers_) = {},
-				decltype(signal_semaphores_) = {},
-				decltype(info) info = {}
+		explicit info_proxy(
+			decltype(wait_semaphores_),
+			decltype(dst_stage_mask_) = {},
+			decltype(command_buffers_) = {},
+			decltype(signal_semaphores_) = {},
+			decltype(info) info = {}
 		);
 
 		info_proxy(base_info_type = {});
@@ -1288,23 +1283,23 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(wait_semaphores_)> wait_semaphores_property{
 			*this,
-				& info_proxy::get_wait_semaphores,
-				& info_proxy::set_wait_semaphores
+			&info_proxy::get_wait_semaphores,
+			&info_proxy::set_wait_semaphores
 		};
 		const property<info_proxy, decltype(dst_stage_mask_)> dst_stage_mask_property{
 			*this,
-				& info_proxy::get_dst_stage_mask,
-				& info_proxy::set_dst_stage_mask
+			&info_proxy::get_dst_stage_mask,
+			&info_proxy::set_dst_stage_mask
 		};
 		const property<info_proxy, decltype(command_buffers_)> command_buffers_property{
 			*this,
-				& info_proxy::get_command_buffers,
-				& info_proxy::set_command_buffers
+			&info_proxy::get_command_buffers,
+			&info_proxy::set_command_buffers
 		};
 		const property<info_proxy, decltype(signal_semaphores_)> signal_semaphores_property{
 			*this,
-				& info_proxy::get_signal_semaphores,
-				& info_proxy::set_signal_semaphores
+			&info_proxy::get_signal_semaphores,
+			&info_proxy::set_signal_semaphores
 		};
 	};
 
@@ -1325,12 +1320,12 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(
-				decltype(wait_semaphores_),
-				decltype(swapchains_) = {},
-				decltype(image_indices_) = {},
-				decltype(results_) = {},
-				decltype(info) = {}
+		explicit info_proxy(
+			decltype(wait_semaphores_),
+			decltype(swapchains_) = {},
+			decltype(image_indices_) = {},
+			decltype(results_) = {},
+			decltype(info) = {}
 		);
 		info_proxy(base_info_type = {});
 
@@ -1348,23 +1343,23 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(wait_semaphores_)> wait_semaphores_property{
 			*this,
-				& info_proxy::get_wait_semaphores,
-				& info_proxy::set_wait_semaphores
+			&info_proxy::get_wait_semaphores,
+			&info_proxy::set_wait_semaphores
 		};
 		const property<info_proxy, decltype(swapchains_)> swapchains_property{
 			*this,
-				& info_proxy::get_swapchains,
-				& info_proxy::set_swapchains
+			&info_proxy::get_swapchains,
+			&info_proxy::set_swapchains
 		};
 		const property<info_proxy, decltype(image_indices_)> image_indices_property{
 			*this,
-				& info_proxy::get_image_indices,
-				& info_proxy::set_image_indices
+			&info_proxy::get_image_indices,
+			&info_proxy::set_image_indices
 		};
 		const property<info_proxy, decltype(results_)> results_property{
 			*this,
-				& info_proxy::get_results,
-				& info_proxy::set_results
+			&info_proxy::get_results,
+			&info_proxy::set_results
 		};
 	};
 
@@ -1383,7 +1378,7 @@ namespace vulkan::utility
 	public:
 		DEFAULT_RULE_OF_5(info_proxy)
 
-			explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
+		explicit info_proxy(decltype(queue_family_indices_set_), decltype(info) = {});
 
 		info_proxy(base_info_type = {});
 
@@ -1392,8 +1387,8 @@ namespace vulkan::utility
 
 		const property<info_proxy, decltype(queue_family_indices_set_)> queue_family_indices_set_property{
 			*this,
-				& info_proxy::get_queue_family_indices_set,
-				& info_proxy::set_queue_family_indices_set
+			&info_proxy::get_queue_family_indices_set,
+			&info_proxy::set_queue_family_indices_set
 		};
 	};
 

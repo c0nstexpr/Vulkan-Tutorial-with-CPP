@@ -2,7 +2,6 @@
 
 #include "vulkan/utility/utility.h"
 #include "utility/constant/numberic.h"
-#include "vulkan/utility/gltf/gltf.h"
 #include <unordered_map>
 #include <glm/gtx/hash.hpp>
 
@@ -209,8 +208,8 @@ namespace vulkan
         unsigned fps_ = 0;
 
     public:
-
         ~vulkan_sample();
+
         decltype(fps_) fps() const;
 
         const SwapchainCreateInfoKHR& swapchain_create_info() const;

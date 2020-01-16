@@ -1,14 +1,10 @@
 #pragma once
 #include "object.h"
 #include "vulkan/utility/constant/constant.h"
-#include <type_traits>
 
 namespace vulkan::utility
 {
-    using std::tuple;
-    using std::pair;
     using std::bitset;
-    using std::initializer_list;
 
     [[nodiscard]] optional<decltype(MemoryAllocateInfo::memoryTypeIndex)> search_memory_type_index(
         const PhysicalDevice&,
@@ -86,7 +82,7 @@ namespace vulkan::utility
             void write_impl(value_type<T>, const Op& = {});
 
         public:
-            base_array_values() = default;
+            constexpr base_array_values() = default;
             base_array_values(
                 const device_object&,
                 const array<BufferUsageFlags, type_list::size>&,

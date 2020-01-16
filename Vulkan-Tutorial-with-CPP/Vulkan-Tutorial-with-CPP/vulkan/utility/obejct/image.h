@@ -1,5 +1,4 @@
 #pragma once
-#include "vulkan/utility/obejct/object.h"
 #include "static_memory.h"
 
 namespace vulkan::utility
@@ -10,7 +9,8 @@ namespace vulkan::utility
         const device_object&,
         const vector<Image>&,
         const PhysicalDevice&,
-        const MemoryPropertyFlags);
+        const MemoryPropertyFlags
+    );
 
     void write_transfer_image_layout_command(
         const CommandBuffer,
@@ -18,7 +18,7 @@ namespace vulkan::utility
         const ImageSubresourceRange,
         const ImageLayout,
         const ImageLayout,
-        const DispatchLoaderDynamic&
+        const DispatchLoaderDynamic& dispatch
     );
 
     template<Format FormatValue>
@@ -57,7 +57,7 @@ namespace vulkan::utility
         void write_from_src(
             const device_object&,
             const Input&,
-            const Input&
+            const Input& end
         ) const;
 
         void write_transfer_command(const device_object& device_object, const CommandBuffer&) const;
@@ -91,7 +91,8 @@ namespace vulkan::utility
         constexpr depth_image(
             const Format,
             const ImageType,
-            const Extent3D) noexcept;
+            const Extent3D
+        ) noexcept;
 
         void initialize(const device_object&, const PhysicalDevice);
 

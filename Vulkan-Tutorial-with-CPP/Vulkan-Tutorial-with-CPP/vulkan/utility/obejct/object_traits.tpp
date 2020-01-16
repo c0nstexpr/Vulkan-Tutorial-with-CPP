@@ -11,10 +11,10 @@ namespace vk
 namespace vulkan::utility
 {
     template<typename HandleType, typename DispatchType>
-    constexpr object_traits<HandleType, DispatchType>::object_traits(std::nullptr_t) noexcept {}
+    object_traits<HandleType, DispatchType>::object_traits(std::nullptr_t) noexcept {}
 
     template<typename HandleType, typename DispatchType>
-    constexpr object_traits<HandleType, DispatchType>::object_traits(info_type info, base base_handle) noexcept :
+    object_traits<HandleType, DispatchType>::object_traits(info_type info, base base_handle) noexcept :
         base(std::move(base_handle)),
         info_(std::move(info))
     {}

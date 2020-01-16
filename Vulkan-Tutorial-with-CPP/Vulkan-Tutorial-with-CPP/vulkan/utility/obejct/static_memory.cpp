@@ -89,7 +89,7 @@ namespace vulkan::utility
                 )
             );
             if(!index)
-                throw std::runtime_error{"unable to fetch suitable memory type"};
+                throw std::runtime_error{"unable to get suitable memory type"};
 
             memory_index = *index;
         }

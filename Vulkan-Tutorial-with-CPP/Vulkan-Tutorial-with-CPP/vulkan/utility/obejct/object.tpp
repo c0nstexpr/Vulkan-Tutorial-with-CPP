@@ -31,8 +31,7 @@ namespace vulkan::utility
         const optional<AllocationCallbacks>& allocator
     )
     {
-        auto info = this->info();
-        this->base::base::operator=(create_unique_handle(owner, dispatch, info, allocator));
+        base::base::operator=(create_unique_handle(owner, dispatch, this->info(), allocator));
     }
 
     template<typename HandleType>

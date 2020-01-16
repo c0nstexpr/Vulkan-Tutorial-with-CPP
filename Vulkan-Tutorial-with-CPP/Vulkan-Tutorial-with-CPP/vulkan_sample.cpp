@@ -349,7 +349,7 @@ namespace vulkan
         transfer_memory_ = decltype(transfer_memory_){
             *physical_device_,
             device_,
-            array<BufferUsageFlags, 2>{BufferUsageFlagBits::eVertexBuffer, BufferUsageFlagBits::eIndexBuffer},
+            {BufferUsageFlagBits::eVertexBuffer, BufferUsageFlagBits::eIndexBuffer},
             {vertices.size(), indices.size()}
         };
 
